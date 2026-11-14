@@ -1,7 +1,6 @@
 import streamlit as st
 
-from ui.components import leaderboard
-from ui.navigation import go_to, MISSION_BRIEFING
+from ui.components import leaderboard, game_entry
 
 
 def render() -> None:
@@ -11,7 +10,4 @@ def render() -> None:
         leaderboard.render()
 
     with col_right:
-        with st.container(key="entry_panel"):
-            st.title("Bobbery Rob")
-            st.caption("Entry panel (placeholder, built in 2.2)")
-            st.button("Enter Game", on_click=go_to, args=(MISSION_BRIEFING,))
+        game_entry.render()

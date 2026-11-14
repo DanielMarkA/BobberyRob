@@ -5,4 +5,5 @@ from ui.navigation import go_to, GAMEPLAY
 def render() -> None:
     st.title("Mission Briefing")
     st.caption("Screen: Mission Briefing (placeholder)")
+    st.caption(f"Agent: {st.session_state.get('player', {}).get('codename', '—')}")
     st.button("Start Mission", on_click=go_to, args=(GAMEPLAY,))

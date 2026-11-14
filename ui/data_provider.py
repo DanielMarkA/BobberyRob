@@ -4,6 +4,8 @@ PHASE 6: replace the bodies of these functions with real backend calls.
 Keep the return shapes the same so no UI code has to change.
 """
 
+import re
+
 RUN_CATEGORIES = ["Perfect Run", "Successful Run", "Compromised Run", "Alternative Run"]
 
 _MOCK_PERFECT = [
@@ -32,3 +34,27 @@ def get_leaderboard(category: str) -> list[dict]:
         {"rank": i, "player": name, "time_seconds": secs}
         for i, (name, secs) in enumerate(rows, start=1)
     ]
+
+def enter_game(codename: str) -> dict:
+    """Validate and register a codename.
+
+    Returns: {"ok": bool, "player_id": str | None, "error": str | None}
+    PHASE 6: replace with the real backend call. The rules below are
+    PROPOSALS for testing the UI, and the backend team owns the final rules.
+    """
+    name = codename.strip()
+
+    if not name:
+        return _fail("Enter a codename to continue.")
+    if not 3 <= len(name) <= 16:
+        return _fail("Codename must be 3–16 characters.")
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", name):
+        return _fail("Use letters, numbers, hyphens and underscores only.")
+    if name.lower() in {n.lower() for n, _ in _MOCK_PERFECT}:
+        return _fail("That codename is already taken.")
+
+    return {"ok": True, "player_id": f"mock-{name.lower()}", "error": None}
+
+
+def _fail(message: str) -> dict:
+    return {"ok": False, "player_id": None, "error": message}
