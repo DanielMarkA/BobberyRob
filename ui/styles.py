@@ -131,6 +131,28 @@ header[data-testid="stHeader"],
 .brief-text { color: #CFCABF; line-height: 1.55; }
 .brief-text ul { margin: 0.25rem 0 0; padding-left: 1.1rem; }
 
+
+/* ---------- Cards (any container whose key starts with "card_") ---------- */
+div[class*="st-key-card_"] {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 1.25rem 1.4rem;
+}
+.card-title { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.35rem; }
+.card-sub { font-weight: 500; margin-bottom: 0.9rem; }
+.card-text { color: #CFCABF; line-height: 1.55; }
+
+/* Mission briefing card: collapsible, no inner border */
+div[class*="st-key-card_briefing"] [data-testid="stExpander"] { border: none; }
+div[class*="st-key-card_briefing"] [data-testid="stExpander"] summary {
+  padding: 0; font-size: 1.15rem; font-weight: 600;
+}
+
+/* Objectives */
+.obj { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.3rem 0; }
+.obj-box { color: var(--muted); font-size: 1.1rem; line-height: 1.3; }
+.obj.done { color: var(--muted); }
+.obj.done .obj-box { color: var(--gold); }
+
 .st-key-start_action { margin-top: 1.5rem; }
 """
 
