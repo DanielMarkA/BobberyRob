@@ -185,6 +185,37 @@ div[class*="st-key-card_scene"] { padding: 0; overflow: hidden; }
 .st-key-response_bar textarea { font-size: 1.1rem; }
 .stApp .st-key-response_bar [data-testid^="stBaseButton-primary"] { height: 96px; }
 
+
+/* ---------- Suspicion meter ---------- */
+.susp-value { font-size: 2.6rem; font-weight: 700; text-align: center; line-height: 1.1; margin: 0.4rem 0 0.9rem; }
+.susp-value span { font-size: 1.2rem; font-weight: 500; color: var(--muted); }
+.susp-track {
+  height: 14px; background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 999px; overflow: hidden;
+}
+.susp-fill { height: 100%; border-radius: 999px; background: var(--gold); }
+.susp-fill.mid { background: #D98A2B; }
+.susp-fill.high { background: #C0392B; }
+.susp-label { text-align: center; color: var(--muted); margin-top: 0.7rem; }
+
+/* ---------- Inventory ---------- */
+.item-icon {
+  width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+  color: var(--muted); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.06em;
+}
+div[class*="st-key-item_"] {
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 0.4rem; margin-bottom: 0.5rem;
+}
+div[class*="st-key-item_sel_"] {
+  border-color: var(--gold); background: rgba(200, 162, 74, 0.1);
+}
+div[class*="st-key-item_"] button {
+  background: transparent; border: none; justify-content: flex-start; text-align: left;
+}
+div[class*="st-key-item_"] button p { text-align: left; }
+
 .st-key-start_action { margin-top: 1.5rem; }
 """
 
