@@ -3,6 +3,7 @@ import html
 import streamlit as st
 
 from ui.data_provider import RUN_CATEGORIES, get_leaderboard
+from ui.formatting import format_time
 
 
 def format_time(seconds: int) -> str:
