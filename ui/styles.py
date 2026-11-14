@@ -216,6 +216,56 @@ div[class*="st-key-item_"] button {
 }
 div[class*="st-key-item_"] button p { text-align: left; }
 
+
+/* ---------- Results ---------- */
+.result-scene {
+  position: relative; width: 100%; aspect-ratio: 1; overflow: hidden;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;
+}
+.result-quote {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 1.4rem 2rem;
+  background: rgba(11, 11, 13, 0.88); text-align: center;
+  font-size: 1.3rem; line-height: 1.4;
+}
+.result-quote small { display: block; margin-top: 0.3rem; color: var(--muted); font-size: 1rem; }
+
+.result-heading { text-align: center; font-size: 2.4rem; font-weight: 800; letter-spacing: 0.06em; margin-bottom: 0.9rem; }
+.result-banner {
+  text-align: center; font-weight: 700; font-size: 1.5rem; padding: 1.1rem;
+  border: 1px solid var(--gold); border-radius: 8px;
+  background: rgba(200, 162, 74, 0.1); color: var(--gold);
+}
+.result-banner.partial { border-color: #D98A2B; background: rgba(217, 138, 43, 0.1); color: #D98A2B; }
+.result-banner.failure { border-color: #C0392B; background: rgba(192, 57, 43, 0.12); color: #E5685A; }
+
+.result-label {
+  text-align: center; margin-top: 1.4rem; color: var(--muted);
+  font-size: 0.85rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+}
+.result-time { text-align: center; font-size: 4.6rem; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.result-note { text-align: center; color: var(--muted); margin-bottom: 0.5rem; }
+
+.result-row {
+  display: flex; justify-content: space-between; padding: 0.5rem 1.5rem; font-size: 1.15rem;
+}
+.result-row .v { font-variant-numeric: tabular-nums; }
+.result-row.total {
+  background: var(--panel-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  font-weight: 700; padding: 0.9rem 1.5rem; margin: 0.6rem 0;
+}
+
+.pb-panel {
+  margin: 1.25rem auto 0; max-width: 90%; padding: 0.9rem 1.2rem; text-align: center;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+}
+.pb-label { color: var(--muted); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+.pb-row { display: flex; justify-content: center; align-items: baseline; gap: 2.5rem; margin-top: 0.3rem; }
+.pb-time { font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pb-badge { color: var(--gold); font-weight: 700; }
+
+.st-key-result_actions { margin-top: 1.5rem; }
+.st-key-result_actions button { height: 3.4rem; font-weight: 700; letter-spacing: 0.04em; }
+
 .st-key-start_action { margin-top: 1.5rem; }
 """
 
