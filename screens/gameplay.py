@@ -1,6 +1,6 @@
 import streamlit as st
 
-from ui.components import header, mission_panel
+from ui.components import dialogue_panel, header, mission_panel
 from ui.data_provider import get_game_state
 from ui.navigation import go_to, MAIN_MENU, RESULTS
 
@@ -16,11 +16,15 @@ def render() -> None:
     header.render()
 
     try:
-        game = _load_state()
+        _load_state()
     except Exception:
         st.error("Could not load the game. Please try again.")
         st.button("Back to main menu", on_click=go_to, args=(MAIN_MENU,))
         return
+
+    # Send any queued response to the backend FIRST, so all panels show new state.
+    dialogue_panel.process_pending()
+    game = st.session_state["game"]
 
     col_left, col_center, col_right = st.columns([342, 914, 343], gap="medium")
 
@@ -28,8 +32,7 @@ def render() -> None:
         mission_panel.render(game)
 
     with col_center:
-        with st.container(key="card_scene_placeholder"):
-            st.caption("Center panel: built in Milestone 4.2")
+        dialogue_panel.render(game)
 
     with col_right:
         with st.container(key="card_status_placeholder"):

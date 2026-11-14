@@ -5,6 +5,10 @@ Keep the return shapes the same so no UI code has to change.
 """
 
 import re
+import copy
+import time
+
+import streamlit as st # mock only: remove when the real backend replaces the mocks
 
 RUN_CATEGORIES = ["Perfect Run", "Successful Run", "Compromised Run", "Alternative Run"]
 
@@ -14,6 +18,11 @@ _MOCK_PERFECT = [
     ("Vector", 248), ("Zenith", 263),
 ]
 
+_MOCK_REPLIES = [
+    ("Interesting. And who invited you?", 38, "Moderate Attention"),
+    ("May I see some identification?", 42, "Moderate Attention"),
+    ("Hmm. Wait here a moment, please.", 55, "Increased Scrutiny"),
+]
 
 def get_leaderboard(category: str) -> list[dict]:
     """Return ranked entries for one run category.
@@ -96,6 +105,8 @@ def get_game_state() -> dict:
     backend returns this same shape, and the UI just redraws from it.
     The frontend never calculates suspicion, objectives or inventory itself.
     """
+    st.session_state["_mock_turn"] = 0
+
     return {
         "mission_summary": (
             "A rare artifact is being moved into a restricted collection area. "
@@ -121,6 +132,27 @@ def get_game_state() -> dict:
         ],
         "notice": "Maintain your composure. Inconsistent statements may raise suspicion.",
     }
+
+def submit_response(text: str) -> dict:
+    """Send the player's response to the backend and return the NEW full game state.
+
+    Same shape as get_game_state(). PHASE 6: replace this with the real call.
+    The backend sends the text to the AI, validates the result, updates state.
+    (This mock reads session_state only because it has no server. The real
+    backend keeps the game state itself.)
+    """
+    time.sleep(1.2)  # simulate AI latency so the spinner is visible
+    if text.strip().lower() == "/fail":  # test hook for the error path
+        raise RuntimeError("simulated backend failure")
+
+    game = copy.deepcopy(st.session_state["game"])
+    turn = st.session_state.get("_mock_turn", 0)
+    reply, value, label = _MOCK_REPLIES[turn % len(_MOCK_REPLIES)]
+    st.session_state["_mock_turn"] = turn + 1
+
+    game["dialogue"]["text"] = reply
+    game["suspicion"] = {"value": value, "label": label}
+    return game
 
 def _fail(message: str) -> dict:
     return {"ok": False, "player_id": None, "error": message}
