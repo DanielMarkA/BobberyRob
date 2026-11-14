@@ -37,6 +37,31 @@ header[data-testid="stHeader"],
   min-height: 640px;
 }
 
+/* ---------- Game entry ---------- */
+.st-key-entry_panel { justify-content: center; padding: 2rem 3.4rem; }
+.entry-mark {
+  width: 86px; height: 64px; margin: 0 auto 1rem;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel-2); font-size: 1.8rem;
+}
+.entry-title {
+  text-align: center; font-weight: 800; font-size: 3rem;
+  letter-spacing: 0.06em; line-height: 1.1;
+}
+.entry-tagline { text-align: center; color: var(--muted); margin: 0.75rem 0 2.5rem; }
+
+.st-key-entry_panel [data-testid="stForm"] { border: none; padding: 0; }
+.st-key-entry_panel label p { font-size: 1rem; font-weight: 500; }
+.st-key-entry_panel input { height: 3.2rem; font-size: 1.05rem; }
+
+/* Dark text on the gold button for contrast */
+.st-key-entry_panel button[kind^="primary"],
+.st-key-entry_panel [data-testid^="stBaseButton-primary"] {
+  height: 3.4rem; font-weight: 700; letter-spacing: 0.04em; color: #0B0B0D;
+}
+.st-key-entry_panel [data-testid^="stBaseButton-primary"] p { color: #0B0B0D; }
+
 /* ---------- Leaderboard ---------- */
 .lb-trophy {
   width: 64px; height: 48px; margin: 0 auto 0.75rem;
