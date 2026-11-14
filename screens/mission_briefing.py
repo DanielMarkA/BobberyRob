@@ -57,6 +57,7 @@ def render() -> None:
                     st.error("Could not start the mission. Please try again.")
                     return
                 if result["ok"]:
+                    st.session_state.pop("game", None)
                     go_to(GAMEPLAY)
                     st.rerun()
                 else:

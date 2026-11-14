@@ -89,6 +89,38 @@ def start_mission() -> dict:
     """
     return {"ok": True, "error": None}
 
+def get_game_state() -> dict:
+    """Return the full current game state for the gameplay screen.
+
+    PHASE 6: replace with the real backend call. After every player action the
+    backend returns this same shape, and the UI just redraws from it.
+    The frontend never calculates suspicion, objectives or inventory itself.
+    """
+    return {
+        "mission_summary": (
+            "A rare artifact is being moved into a restricted collection area. "
+            "Your objective is to reach the restricted area and retrieve the artifact."
+        ),
+        "location": {"name": "Main Exhibition Hall", "image": None},
+        "objectives": [
+            {"text": "Enter the Museum", "done": True},
+            {"text": "Reach the Main Hall", "done": False},
+            {"text": "Pass the Security Checkpoint", "done": False},
+            {"text": "Reach the Restricted Area", "done": False},
+            {"text": "Retrieve the Artifact", "done": False},
+        ],
+        "dialogue": {
+            "speaker": "Security Guard",
+            "text": "Good evening. What brings you to the museum?",
+        },
+        "suspicion": {"value": 35, "label": "Moderate Attention"},
+        "inventory": [
+            {"id": "fake_passport", "name": "Fake Passport", "quantity": 1, "icon": "PASS"},
+            {"id": "bribe_money", "name": "Bribe Money", "quantity": 3, "icon": "CASH"},
+            {"id": "invitation_letter", "name": "Invitation Letter", "quantity": 1, "icon": "LETTER"},
+        ],
+        "notice": "Maintain your composure. Inconsistent statements may raise suspicion.",
+    }
 
 def _fail(message: str) -> dict:
     return {"ok": False, "player_id": None, "error": message}
