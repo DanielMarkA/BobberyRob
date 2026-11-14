@@ -153,6 +153,38 @@ div[class*="st-key-card_briefing"] [data-testid="stExpander"] summary {
 .obj.done { color: var(--muted); }
 .obj.done .obj-box { color: var(--gold); }
 
+
+/* ---------- Scene and dialogue ---------- */
+div[class*="st-key-card_scene"] { padding: 0; overflow: hidden; }
+.scene {
+  position: relative; width: 100%; aspect-ratio: 914 / 640; background: var(--panel-2);
+}
+.scene-art {
+  position: absolute; inset: 0; padding-bottom: 14%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center;
+}
+.dialogue-wrap {
+  position: absolute; left: 2.2%; right: 2.2%; bottom: 3.5%;
+  padding: 1.7rem 1.6rem 1.2rem;
+  background: rgba(11, 11, 13, 0.9); border: 1px solid var(--line); border-radius: 10px;
+}
+.speaker {
+  position: absolute; top: -1.15rem; left: 1.4rem; padding: 0.35rem 1rem;
+  background: var(--panel); border: 1px solid var(--gold); border-radius: 6px;
+  color: var(--gold); font-weight: 600; font-size: 0.95rem; letter-spacing: 0.04em;
+}
+.dialogue-text {
+  font-size: 1.4rem; line-height: 1.45; min-height: 3.5rem;
+  max-height: 8.5rem; overflow-y: auto;
+}
+
+/* ---------- Response bar ---------- */
+.st-key-response_bar { margin-top: 0.25rem; }
+.st-key-response_bar [data-testid="stForm"] { padding: 0; }
+.st-key-response_bar textarea { font-size: 1.1rem; }
+.stApp .st-key-response_bar [data-testid^="stBaseButton-primary"] { height: 96px; }
+
 .st-key-start_action { margin-top: 1.5rem; }
 """
 
