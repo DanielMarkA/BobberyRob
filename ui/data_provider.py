@@ -55,6 +55,40 @@ def enter_game(codename: str) -> dict:
 
     return {"ok": True, "player_id": f"mock-{name.lower()}", "error": None}
 
+def get_mission_briefing() -> dict:
+    """Return the mission configuration shown on the briefing screen.
+
+    PHASE 6: replace with the real call (data comes from scenarios/museum.json).
+    "location_image" is None until artwork exists.
+    """
+    return {
+        "title": "The Forgotten Artifact",
+        "summary": (
+            "A priceless artifact has reportedly gone missing from the museum's "
+            "restricted collection. Your task is to reach the restricted area "
+            "and uncover what really happened."
+        ),
+        "location_name": "The National Museum",
+        "location_image": None,
+        "primary_objective": "Gain access to the Restricted Collection Area.",
+        "optional_objectives": [
+            "Discover the truth about the missing artifact.",
+            "Avoid raising suspicion.",
+        ],
+        "information": (
+            "The museum is under heightened security due to the incident. "
+            "Guards will be more alert than usual."
+        ),
+    }
+
+def start_mission() -> dict:
+    """Tell the backend the player pressed Start Mission (this starts the timer).
+
+    Returns: {"ok": bool, "error": str | None}
+    PHASE 6: the backend creates the run and starts the clock here.
+    """
+    return {"ok": True, "error": None}
+
 
 def _fail(message: str) -> dict:
     return {"ok": False, "player_id": None, "error": message}
