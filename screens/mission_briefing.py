@@ -5,7 +5,7 @@ import streamlit as st
 from ui.components import header
 from ui.components.image_slot import image_slot
 from ui.data_provider import get_mission_briefing, start_mission
-from ui.navigation import go_to, GAMEPLAY, MAIN_MENU
+from ui.navigation import go_to, reset_mission_state, GAMEPLAY, MAIN_MENU
 
 
 def _item(number: str, label: str, body_html: str) -> str:
@@ -57,7 +57,7 @@ def render() -> None:
                     st.error("Could not start the mission. Please try again.")
                     return
                 if result["ok"]:
-                    st.session_state.pop("game", None)
+                    reset_mission_state()
                     go_to(GAMEPLAY)
                     st.rerun()
                 else:

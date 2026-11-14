@@ -31,6 +31,60 @@ _MOCK_ITEM_OUTCOMES = {
     "invitation_letter": ("An invitation. Who signed it?", "The guard is reading your letter closely.", False),
 }
 
+_MOCK_RESULTS = {
+    "success": {
+        "heading": "MISSION COMPLETE",
+        "outcome_label": "Successful Infiltration",
+        "tone": "success",  # success | partial | failure (styling only)
+        "raw_seconds": 512.36,
+        "penalties": [{"label": "Failed Access Penalty", "seconds": 30}],
+        "adjusted_seconds": 542.36,
+        "final_suspicion": 24,
+        "objectives_done": 3,
+        "objectives_total": 3,
+        "personal_best_seconds": 542.36,
+        "is_new_record": True,
+        "quote": "Another successful operation, Rob.",
+        "quote_by": "The Agency",
+        "scene_caption": "Grand Museum interior",
+    },
+    "compromised": {
+        "heading": "MISSION COMPLETE",
+        "outcome_label": "Compromised Victory",
+        "tone": "partial",
+        "raw_seconds": 611.5,
+        "penalties": [
+            {"label": "Failed Access Penalty", "seconds": 30},
+            {"label": "Unconvincing Explanation Penalty", "seconds": 60},
+        ],
+        "adjusted_seconds": 701.5,
+        "final_suspicion": 78,
+        "objectives_done": 2,
+        "objectives_total": 3,
+        "personal_best_seconds": 542.36,
+        "is_new_record": False,
+        "quote": "You got out. Barely.",
+        "quote_by": "The Agency",
+        "scene_caption": "Museum exit",
+    },
+    "captured": {
+        "heading": "MISSION FAILED",
+        "outcome_label": "Captured",
+        "tone": "failure",
+        "raw_seconds": 305.2,
+        "penalties": [],
+        "adjusted_seconds": None,  # failed attempts are not ranked
+        "final_suspicion": 100,
+        "objectives_done": 1,
+        "objectives_total": 3,
+        "personal_best_seconds": 542.36,
+        "is_new_record": False,
+        "quote": "The Agency does not know you.",
+        "quote_by": "The Agency",
+        "scene_caption": "Holding room",
+    },
+}
+
 def get_leaderboard(category: str) -> list[dict]:
     """Return ranked entries for one run category.
 
@@ -183,6 +237,16 @@ def use_item(item_id: str) -> dict:
     game["dialogue"]["text"] = dialogue
     game["notice"] = notice
     return game
+
+def get_mission_result() -> dict:
+    """Return the finished mission's results.
+
+    PHASE 6: replace with the real call. Every number here is calculated by the
+    backend; the UI only formats and displays them. adjusted_seconds and
+    personal_best_seconds may be None.
+    """
+    ending = st.session_state.get("_mock_ending", "success")  # mock only
+    return copy.deepcopy(_MOCK_RESULTS[ending])
 
 def _fail(message: str) -> dict:
     return {"ok": False, "player_id": None, "error": message}

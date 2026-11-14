@@ -13,6 +13,17 @@ GAMEPLAY = "gameplay"
 RESULTS = "results"
 
 
+# Everything that belongs to ONE mission run. Cleared when a new mission starts.
+_MISSION_KEYS = (
+    "game", "selected_item", "response_text", "send_error",
+    "item_error", "pending_response", "pending_item", "_mock_turn",
+)
+
+
+def reset_mission_state() -> None:
+    for key in _MISSION_KEYS:
+        st.session_state.pop(key, None)
+
 def init_state() -> None:
     """Create navigation defaults the first time the app loads."""
     st.session_state.setdefault("screen", MAIN_MENU)

@@ -14,6 +14,10 @@ def _load_state() -> dict:
         st.session_state["game"] = get_game_state()
     return st.session_state["game"]
 
+def _end_mission(ending: str) -> None:
+    """TEMPORARY dev shortcut. The real ending will come from the backend."""
+    st.session_state["_mock_ending"] = ending
+    go_to(RESULTS)
 
 def render() -> None:
     header.render()
@@ -43,5 +47,9 @@ def render() -> None:
         inventory.render(game["inventory"])
         security_notices.render(game["notice"])
 
-    # Temporary dev shortcut, removed once the real ending flow exists
-    st.button("End Mission (temporary)", on_click=go_to, args=(RESULTS,))
+    # Temporary dev shortcuts, removed once the real ending flow exists
+    st.caption("Dev shortcuts (temporary)")
+    c1, c2, c3, _ = st.columns([1, 1, 1, 3])
+    c1.button("End: success", on_click=_end_mission, args=("success",))
+    c2.button("End: compromised", on_click=_end_mission, args=("compromised",))
+    c3.button("End: captured", on_click=_end_mission, args=("captured",))
