@@ -1,6 +1,9 @@
 import streamlit as st
 
-from ui.components import dialogue_panel, header, mission_panel
+from ui.components import (
+    dialogue_panel, header, inventory, mission_panel,
+    security_notices, suspicion_meter,
+)
 from ui.data_provider import get_game_state
 from ui.navigation import go_to, MAIN_MENU, RESULTS
 
@@ -24,6 +27,7 @@ def render() -> None:
 
     # Send any queued response to the backend FIRST, so all panels show new state.
     dialogue_panel.process_pending()
+    inventory.process_pending()
     game = st.session_state["game"]
 
     col_left, col_center, col_right = st.columns([342, 914, 343], gap="medium")
@@ -35,8 +39,9 @@ def render() -> None:
         dialogue_panel.render(game)
 
     with col_right:
-        with st.container(key="card_status_placeholder"):
-            st.caption("Right panel: built in Milestone 4.3")
+        suspicion_meter.render(game["suspicion"])
+        inventory.render(game["inventory"])
+        security_notices.render(game["notice"])
 
     # Temporary dev shortcut, removed once the real ending flow exists
     st.button("End Mission (temporary)", on_click=go_to, args=(RESULTS,))

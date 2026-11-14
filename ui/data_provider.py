@@ -24,6 +24,13 @@ _MOCK_REPLIES = [
     ("Hmm. Wait here a moment, please.", 55, "Increased Scrutiny"),
 ]
 
+_MOCK_ITEM_OUTCOMES = {
+    # item_id: (guard dialogue, notice, is the item consumed?)
+    "fake_passport": ("Let me take a look... This seems to be in order.", "Passport inspected.", False),
+    "bribe_money": ("Hm. I didn't see anything. Move along.", "The guard pockets the money and looks away.", True),
+    "invitation_letter": ("An invitation. Who signed it?", "The guard is reading your letter closely.", False),
+}
+
 def get_leaderboard(category: str) -> list[dict]:
     """Return ranked entries for one run category.
 
@@ -152,6 +159,29 @@ def submit_response(text: str) -> dict:
 
     game["dialogue"]["text"] = reply
     game["suspicion"] = {"value": value, "label": label}
+    return game
+
+def use_item(item_id: str) -> dict:
+    """Ask the backend to use an item. Returns the NEW full game state.
+
+    PHASE 6: replace with the real call. The backend validates ownership,
+    quantity and usage conditions, and reports problems via state["notice"].
+    """
+    time.sleep(0.8)  # simulate latency
+    game = copy.deepcopy(st.session_state["game"])
+
+    item = next((i for i in game["inventory"] if i["id"] == item_id), None)
+    if item is None or item["quantity"] <= 0:
+        game["notice"] = "You don't have that item."
+        return game
+
+    dialogue, notice, consumed = _MOCK_ITEM_OUTCOMES.get(
+        item_id, ("...", "Item used.", False)
+    )
+    if consumed:
+        item["quantity"] -= 1
+    game["dialogue"]["text"] = dialogue
+    game["notice"] = notice
     return game
 
 def _fail(message: str) -> dict:
