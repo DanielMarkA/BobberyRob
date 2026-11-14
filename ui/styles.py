@@ -27,6 +27,13 @@ header[data-testid="stHeader"],
 
 .block-container { max-width: 1250px; padding-top: 3rem; }
 
+/* ---------- Primary buttons (all screens): dark text on gold for contrast ---------- */
+.stApp [data-testid^="stBaseButton-primary"],
+.stApp button[kind^="primary"] {
+  height: 3.4rem; font-weight: 700; letter-spacing: 0.04em; color: #0B0B0D;
+}
+.stApp [data-testid^="stBaseButton-primary"] p { color: #0B0B0D; }
+
 /* ---------- Panels ---------- */
 .st-key-leaderboard_panel,
 .st-key-entry_panel {
@@ -54,13 +61,6 @@ header[data-testid="stHeader"],
 .st-key-entry_panel [data-testid="stForm"] { border: none; padding: 0; }
 .st-key-entry_panel label p { font-size: 1rem; font-weight: 500; }
 .st-key-entry_panel input { height: 3.2rem; font-size: 1.05rem; }
-
-/* Dark text on the gold button for contrast */
-.st-key-entry_panel button[kind^="primary"],
-.st-key-entry_panel [data-testid^="stBaseButton-primary"] {
-  height: 3.4rem; font-weight: 700; letter-spacing: 0.04em; color: #0B0B0D;
-}
-.st-key-entry_panel [data-testid^="stBaseButton-primary"] p { color: #0B0B0D; }
 
 /* ---------- Leaderboard ---------- */
 .lb-trophy {
@@ -90,6 +90,48 @@ header[data-testid="stHeader"],
 .lb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-time { text-align: right; font-variant-numeric: tabular-nums; }
 .lb-empty { text-align: center; color: var(--muted); padding: 3rem 0; }
+
+/* ---------- Shared header ---------- */
+.app-header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 999; height: 84px;
+  display: flex; align-items: center; padding: 0 4rem;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+  font-weight: 700; font-size: 1.5rem; letter-spacing: 0.06em;
+}
+
+/* ---------- Image placeholder ---------- */
+.img-slot {
+  width: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;
+}
+.img-slot-label {
+  font-weight: 600; font-size: 0.85rem;
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.img-slot-caption { color: var(--muted); margin-top: 0.4rem; }
+
+/* ---------- Mission briefing ---------- */
+.brief-eyebrow {
+  color: var(--muted); font-size: 0.8rem; font-weight: 600;
+  letter-spacing: 0.22em; text-transform: uppercase;
+}
+.brief-title { font-size: 2.7rem; font-weight: 700; line-height: 1.15; margin: 0.5rem 0 1rem; }
+.brief-summary {
+  font-size: 1.1rem; line-height: 1.6; color: #CFCABF;
+  padding-bottom: 1.5rem; margin-bottom: 1.75rem; border-bottom: 1px solid var(--line);
+}
+.brief-item { display: flex; gap: 1.25rem; margin-bottom: 1.5rem; }
+.brief-num {
+  flex: 0 0 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--gold); border-radius: 6px; background: rgba(200, 162, 74, 0.08);
+  color: var(--gold); font-weight: 600;
+}
+.brief-label { font-weight: 700; font-size: 0.95rem; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.25rem; }
+.brief-text { color: #CFCABF; line-height: 1.55; }
+.brief-text ul { margin: 0.25rem 0 0; padding-left: 1.1rem; }
+
+.st-key-start_action { margin-top: 1.5rem; }
 """
 
 
