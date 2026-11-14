@@ -4,6 +4,6 @@ __pycache__/
 .env
 *.db
 .streamlit/secrets.toml
-.impeccable
+.impeccable/
 PRODUCT.md
 .DS_Store
