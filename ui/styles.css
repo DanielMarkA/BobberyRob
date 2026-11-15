@@ -133,6 +133,8 @@ header[data-testid="stHeader"],
 }
 .st-key-entry_panel [data-baseweb="base-input"],
 .st-key-entry_panel [data-baseweb="input"] > div { background: transparent; }
+.st-key-entry_panel div[data-testid="stTextInputRootElement"] { height: 72px; min-height: 72px; }
+.st-key-entry_panel div[data-testid="stTextInputRootElement"] input { height: 100%; }
 .st-key-entry_panel div[data-testid="stTextInputRootElement"] {
   min-height: 72px; border: 1px solid var(--gold); border-radius: 14px; background: #0E0C09;
 }
@@ -187,6 +189,24 @@ header[data-testid="stHeader"],
   -webkit-text-fill-color: transparent; color: transparent;
 }
 
+/* ---------- Screen sizing: panels fit the viewport, list scrolls ---------- */
+:root {
+  --page-pad: clamp(1rem, 4vh, 3rem);
+  --lb-chrome: 310px;   /* fixed space above and below the list; tune after measuring */
+  --lb-list: clamp(144px, calc(100vh - var(--lb-chrome) - 2 * var(--page-pad)), 360px);
+}
+.st-key-leaderboard_panel, .st-key-entry_panel {
+  min-height: calc(var(--lb-chrome) + var(--lb-list));
+}
+.st-key-leaderboard_panel { gap: 0.5rem; }
+
+.lb-scroll {
+  max-height: var(--lb-list); overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent;
+}
+.lb-scroll::-webkit-scrollbar { width: 6px; }
+.lb-scroll::-webkit-scrollbar-thumb { background: var(--gold-lo); border-radius: 3px; }
+
 /* Category tabs (st.segmented_control, key "lb_category") */
 .st-key-lb_category { margin-bottom: 0.75rem; }
 .st-key-lb_category [data-testid="stButtonGroup"] { width: 100%; }
@@ -202,7 +222,13 @@ header[data-testid="stHeader"],
 }
 .st-key-lb_category button + button { margin-left: -1px; }
 .st-key-lb_category button p {
-  font-family: var(--font-display); font-size: 0.8rem; line-height: 1.25; text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal; 
+  overflow: visible; 
+  text-overflow: clip;
 }
 .st-key-lb_category button:hover { background: rgba(212, 168, 75, 0.12); }
 .st-key-lb_category button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: -3px; }

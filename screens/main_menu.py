@@ -9,7 +9,7 @@ _SCREEN_CSS = """
     url("/app/static/backgrounds/museum_blur.webp") center / cover fixed no-repeat,
     var(--bg);
 }
-.block-container { max-width: 1280px; padding-top: clamp(1.5rem, 9vh, 6rem); }
+.block-container { max-width: 1280px; padding-top: var(--page-pad); padding-bottom: var(--page-pad); }
 .stApp [data-testid="stHorizontalBlock"] { gap: 24px; }
 @media (max-width: 640px) {
   .stApp [data-testid="stHorizontalBlock"] { flex-direction: column-reverse; }

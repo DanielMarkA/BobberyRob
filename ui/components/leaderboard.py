@@ -49,6 +49,6 @@ def render() -> None:
                     f'<span class="lb-time">{format_time(e["time_seconds"])}</span>'
                     f'</div>'
                 )
-            body = "".join(rows)
+            body = '<div class="lb-scroll">' + "".join(rows) + "</div>"
 
         st.markdown(header + body, unsafe_allow_html=True)
