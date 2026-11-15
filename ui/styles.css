@@ -131,23 +131,22 @@ header[data-testid="stHeader"],
 .st-key-entry_panel [data-testid="stWidgetLabel"] p {
   margin: 0; font-family: var(--font-display); font-size: 1.05rem; color: var(--text);
 }
-.st-key-entry_panel [data-baseweb="input"],
-.st-key-entry_panel [data-baseweb="base-input"] { background: transparent; }
-.st-key-entry_panel [data-baseweb="input"] {
-  min-height: 72px; border: 1px solid var(--gold-line); border-radius: 14px;
-  background: #0E0C09;
+.st-key-entry_panel [data-baseweb="base-input"],
+.st-key-entry_panel [data-baseweb="input"] > div { background: transparent; }
+.st-key-entry_panel div[data-testid="stTextInputRootElement"] {
+  min-height: 72px; border: 1px solid var(--gold); border-radius: 14px; background: #0E0C09;
 }
-.st-key-entry_panel [data-baseweb="input"]:focus-within {
+.st-key-entry_panel div[data-testid="stTextInputRootElement"]:focus-within {
   border-color: var(--gold-hi); box-shadow: 0 0 0 3px rgba(212, 168, 75, 0.2);
 }
 .st-key-entry_panel input {
-  height: 70px; padding: 0 1.25rem; color: var(--text);
+  height: 70px; padding: 0 1.25rem; color: var(--text); background: transparent;
   font-family: var(--font-display); font-size: 1.15rem;
 }
 .st-key-entry_panel input::placeholder { color: var(--muted); }
 
 /* Error state: red border plus message under the field */
-.st-key-entry_panel:has(.field-error) [data-baseweb="input"] { border-color: var(--danger); }
+.st-key-entry_panel:has(.field-error) div[data-testid="stTextInputRootElement"] { border-color: var(--danger); }
 .field-error {
   margin: 0.5rem 0 0 0.25rem; color: var(--danger);
   font-family: var(--font-display); font-size: 0.95rem;
@@ -190,14 +189,18 @@ header[data-testid="stHeader"],
 
 /* Category tabs (st.segmented_control, key "lb_category") */
 .st-key-lb_category { margin-bottom: 0.75rem; }
-.st-key-lb_category [data-testid="stButtonGroup"] {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; width: 100%;
+.st-key-lb_category [data-testid="stButtonGroup"] { width: 100%; }
+/* whichever element directly holds the buttons becomes the 4-column grid */
+.st-key-lb_category :is([data-testid="stButtonGroup"], div):has(> button) {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0; width: 100%;
 }
 .st-key-lb_category button {
-  width: 100%; min-height: 56px; margin: 0; padding: 0.25rem 0.4rem;
+  width: 100%; min-width: 0; min-height: 56px; margin: 0; padding: 0.25rem 0.4rem;
   border: 1px solid var(--gold-line); border-radius: 2px;
   background: rgba(255, 255, 255, 0.015); color: #E6D6A8;
 }
+.st-key-lb_category button + button { margin-left: -1px; }
 .st-key-lb_category button p {
   font-family: var(--font-display); font-size: 0.8rem; line-height: 1.25; text-align: center;
 }
@@ -211,12 +214,14 @@ header[data-testid="stHeader"],
 }
 
 .lb-head, .lb-row {
-  display: grid; grid-template-columns: 3.4rem 1fr 6rem;
-  align-items: center; padding: 0 1.1rem;
+  display: grid; grid-template-columns: 3.4rem 1fr 6rem; align-items: center;
+  padding: 0 1.1rem; box-sizing: border-box; line-height: 1.2;
+  font-feature-settings: "lnum" 1, "tnum" 1;
 }
-.lb-head {
-  height: 44px; margin-top: 0.5rem; color: var(--text);
-  font-family: var(--font-display); font-size: 0.95rem;
+.lb-head { height: 44px; margin-top: 0.5rem; color: var(--text); font-family: var(--font-display); font-size: 0.95rem; }
+.lb-row {
+  height: 36px; font-family: var(--font-display); font-size: 1.05rem;
+  border-bottom: 1px solid rgba(212, 168, 75, 0.22);
 }
 .lb-time-h { display: flex; justify-content: flex-end; align-items: center; gap: 0.4rem; }
 .lb-time-h .icon { color: var(--gold); }
@@ -235,7 +240,8 @@ header[data-testid="stHeader"],
 @media (max-width: 640px) {
   .st-key-leaderboard_panel, .st-key-entry_panel { min-height: 0; padding: 1.25rem 1.1rem; }
   .st-key-entry_panel { padding: 1.5rem 1.25rem; }
-  .st-key-lb_category [data-testid="stButtonGroup"] { grid-template-columns: repeat(2, 1fr); }
+  .st-key-lb_category :is([data-testid="stButtonGroup"], div):has(> button) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .st-key-lb_category button + button { margin-left: 0; }
   .lb-head, .lb-row { grid-template-columns: 2.6rem 1fr 4.5rem; padding: 0 0.5rem; }
 }
 
