@@ -9,8 +9,14 @@ _SCREEN_CSS = """
     url("/app/static/backgrounds/museum_blur.webp") center / cover fixed no-repeat,
     var(--bg);
 }
-.block-container { max-width: 1280px; padding-top: var(--page-pad); padding-bottom: var(--page-pad); }
-.stApp [data-testid="stHorizontalBlock"] { gap: 24px; }
+.block-container {
+  max-width: calc(var(--px) * 1228 + 2rem);
+  padding: max(1rem, calc(var(--px) * 140)) 1rem 1rem;
+}
+.stApp [data-testid="stHorizontalBlock"] { gap: calc(var(--px) * 24); }
+@media (max-width: 900px) {
+  .block-container { max-width: 100%; padding-top: 1rem; }
+}
 @media (max-width: 640px) {
   .stApp [data-testid="stHorizontalBlock"] { flex-direction: column-reverse; }
 }
