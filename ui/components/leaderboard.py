@@ -4,19 +4,14 @@ import streamlit as st
 
 from ui.data_provider import RUN_CATEGORIES, get_leaderboard
 from ui.formatting import format_time
-
-
-def format_time(seconds: int) -> str:
-    """Display only: 134 -> '02:14'. The backend owns the actual time values."""
-    minutes, secs = divmod(int(seconds), 60)
-    return f"{minutes:02d}:{secs:02d}"
+from ui.icons import icon
 
 
 def render() -> None:
     with st.container(key="leaderboard_panel"):
         st.markdown(
-            '<div class="lb-trophy">🏆</div>'
-            '<div class="lb-title">GLOBAL LEADERBOARD</div>',
+            f'<div class="lb-trophy">{icon("trophy", 64)}</div>'
+            '<div class="lb-title">Global Leaderboard</div>',
             unsafe_allow_html=True,
         )
 
@@ -38,7 +33,7 @@ def render() -> None:
 
         header = (
             '<div class="lb-head"><span>#</span><span>Player</span>'
-            '<span style="text-align:right">Time</span></div>'
+            f'<span class="lb-time-h">{icon("timer", 18)}Time</span></div>'
         )
 
         if not entries:
