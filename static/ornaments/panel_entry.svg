@@ -1,0 +1,25 @@
+<svg width="650" height="662" viewBox="0 0 650 662" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="650" height="662" fill="#1E1E1E"/>
+<g id="03 &#194;&#183; Codename &#38; leaderboard">
+<rect width="1672" height="941" transform="translate(-808 -124)" fill="#080807"/>
+<g id="Game entry" clip-path="url(#clip0_0_1)">
+<path id="Antique gold ornamental panel" d="M18 0H632C632 12 638 18 650 18V644C638 644 632 650 632 662H18C18 650 12 644 0 644V18C12 18 18 12 18 0Z" fill="url(#paint0_linear_0_1)" stroke="url(#paint1_linear_0_1)" stroke-width="2"/>
+</g>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_1" x1="325" y1="0" x2="325" y2="662" gradientUnits="userSpaceOnUse">
+<stop stop-color="#11100D"/>
+<stop offset="0.5" stop-color="#090909"/>
+<stop offset="1" stop-color="#11100D"/>
+</linearGradient>
+<linearGradient id="paint1_linear_0_1" x1="325" y1="0" x2="325" y2="662" gradientUnits="userSpaceOnUse">
+<stop stop-color="#F5D795"/>
+<stop offset="0.35" stop-color="#E8B65C"/>
+<stop offset="0.65" stop-color="#A87835"/>
+<stop offset="1" stop-color="#F5D38B"/>
+</linearGradient>
+<clipPath id="clip0_0_1">
+<rect width="650" height="662" fill="white"/>
+</clipPath>
+</defs>
+</svg>

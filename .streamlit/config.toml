@@ -1,9 +1,12 @@
 [theme]
 base = "dark"
 primaryColor = "#C8A24A"
-backgroundColor = "#0B0B0D"
-secondaryBackgroundColor = "#131316"
-textColor = "#ECE8DF"
+backgroundColor = "#090908"
+secondaryBackgroundColor = "#11100D"
+textColor = "#EFE8D8"
 
 [client]
 toolbarMode = "minimal"
+
+[server]
+enableStaticServing = true
