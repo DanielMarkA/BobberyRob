@@ -1,18 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
 
+/* =============================================================================
+   1. DESIGN TOKENS
+   ============================================================================= */
 :root {
   /* Surfaces */
   --bg: #090908;
   --panel: #11100D;
   --panel-2: #181510;
+  --field: #0E0C09;
   --line: #2E2718;
 
-  /* Gold (eyeballed from the Figma gradients, adjust here if needed) */
+  /* Gold (eyeballed from the Figma gradients; adjust here to retune everywhere) */
   --gold-hi: #F0D58A;
   --gold: #D4A84B;
   --gold-lo: #8F6A26;
   --gold-line: rgba(212, 168, 75, 0.5);
   --gold-gradient: linear-gradient(180deg, var(--gold-hi) 0%, var(--gold) 55%, var(--gold-lo) 100%);
+  --cream: #E6D6A8;
+  --gold-pale: #F3DDA0;
+  --ink: #1A1306;               /* dark text on gold */
 
   /* Text and feedback */
   --text: #EFE8D8;
@@ -24,7 +31,7 @@
   --font-display: 'Libre Baskerville', Georgia, serif;
   --font-body: 'Inter', system-ui, sans-serif;
 
-  /* Layout */
+  /* Scale: one Figma pixel at the current window size (frame is 1672 x 941) */
   --px: max(0.62px, min(calc(100vw / 1672), calc(100vh / 941)));
   --header-h: max(64px, calc(var(--px) * 112));
 }
@@ -33,6 +40,10 @@
   :root { --px: min(1px, calc(100vw / 430)); --header-h: 76px; }
 }
 
+
+/* =============================================================================
+   2. BASE AND STREAMLIT CHROME
+   ============================================================================= */
 .stApp {
   font-family: var(--font-body);
   background: var(--bg);
@@ -46,239 +57,23 @@ header[data-testid="stHeader"],
 
 .block-container { max-width: 1280px; padding-top: 3rem; }
 
-/* Marker/header elements must not add flex gap to the page flow */
-[data-testid="stElementContainer"]:has(.app-header) { position: absolute; width: 0; height: 0; margin: 0; }
-[data-testid="stElementContainer"]:has(.screen-marker) { position: absolute; width: 0; height: 0; margin: 0; overflow: hidden; }
-
-/* ---------- Primary buttons (all screens): dark text on gold for contrast ---------- */
-.stApp [data-testid^="stBaseButton-primary"],
-.stApp button[kind^="primary"] {
-  height: 3.4rem; font-weight: 700; letter-spacing: 0.04em; color: #0B0B0D;
+/* Helper elements (header, screen markers) must not add flex gap to the page */
+[data-testid="stElementContainer"]:has(.app-header) {
+  position: absolute; width: 0; height: 0; margin: 0;
 }
-.stApp [data-testid^="stBaseButton-primary"] p { color: #0B0B0D; }
+[data-testid="stElementContainer"]:has(.screen-marker) {
+  position: absolute; width: 0; height: 0; margin: 0; overflow: hidden;
+}
 
-/* ---------- Icons ---------- */
+
+/* =============================================================================
+   3. SHARED COMPONENTS
+   ============================================================================= */
+
+/* ---------- 3.1 Icons (inline Lucide SVG; colour comes from `color`) ---------- */
 .icon { display: block; flex: none; }
 
-/* ---------- Ornate panels: gold keyline, notched corners ---------- */
-.st-key-leaderboard_panel,
-.st-key-entry_panel {
-  --notch: calc(var(--px) * 16);
-  position: relative; box-sizing: border-box; overflow: hidden; gap: 0;
-  height: calc(var(--px) * 662);
-  background: var(--panel);
-  border: 1px solid var(--gold-line); border-radius: 0;
-  mask:
-    radial-gradient(circle var(--notch) at 0 0, #0000 98%, #000),
-    radial-gradient(circle var(--notch) at 100% 0, #0000 98%, #000),
-    radial-gradient(circle var(--notch) at 0 100%, #0000 98%, #000),
-    radial-gradient(circle var(--notch) at 100% 100%, #0000 98%, #000);
-  mask-composite: intersect;
-  -webkit-mask-composite: source-in;
-}
-.st-key-leaderboard_panel::before,
-.st-key-entry_panel::before {
-  content: ""; position: absolute; inset: 3px; pointer-events: none;
-  border: 1px solid rgba(212, 168, 75, 0.22);
-}
-.st-key-leaderboard_panel::after,
-.st-key-entry_panel::after {
-  content: ""; position: absolute; inset: -1px; pointer-events: none;
-  background:
-    radial-gradient(circle calc(var(--notch) + 2px) at 0 0, transparent 0 var(--notch), var(--gold) var(--notch) calc(var(--notch) + 1.5px), transparent calc(var(--notch) + 1.5px)),
-    radial-gradient(circle calc(var(--notch) + 2px) at 100% 0, transparent 0 var(--notch), var(--gold) var(--notch) calc(var(--notch) + 1.5px), transparent calc(var(--notch) + 1.5px)),
-    radial-gradient(circle calc(var(--notch) + 2px) at 0 100%, transparent 0 var(--notch), var(--gold) var(--notch) calc(var(--notch) + 1.5px), transparent calc(var(--notch) + 1.5px)),
-    radial-gradient(circle calc(var(--notch) + 2px) at 100% 100%, transparent 0 var(--notch), var(--gold) var(--notch) calc(var(--notch) + 1.5px), transparent calc(var(--notch) + 1.5px));
-}
-/* Never let flex shrink the panels or squash their contents */
-.st-key-leaderboard_panel,
-.st-key-entry_panel {
-  flex: 0 0 auto; min-height: calc(var(--px) * 662);
-}
-.st-key-leaderboard_panel > *,
-.st-key-entry_panel > * { flex-shrink: 0; }
-
-/* Hide Streamlit's "Press Enter to submit form" / character counter overlay */
-.st-key-entry_panel [data-testid="InputInstructions"] { display: none; }
-
-/* ---------- Game entry (Figma: panel 650 x 662) ---------- */
-.st-key-entry_panel { padding: calc(var(--px) * 40) calc(var(--px) * 55) calc(var(--px) * 20); }
-.entry-emblem {
-  display: block; width: calc(var(--px) * 150); height: auto; aspect-ratio: 1;
-  margin: 0 auto calc(var(--px) * 6);
-}
-.entry-title {
-  text-align: center; font-family: var(--font-display); font-weight: 700;
-  font-size: max(24px, calc(var(--px) * 54)); line-height: calc(var(--px) * 72);
-  letter-spacing: 0.02em; text-transform: uppercase;
-  background: var(--gold-gradient);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
-}
-.entry-tagline {
-  text-align: center; font-family: var(--font-display); color: var(--gold);
-  letter-spacing: 0.04em; font-size: max(12px, calc(var(--px) * 17));
-  line-height: calc(var(--px) * 30); margin: calc(var(--px) * 19) 0 calc(var(--px) * 39);
-}
-.entry-rule {
-  height: 2px; margin: 0 0 calc(var(--px) * 30);
-  background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
-}
-
-.st-key-entry_panel [data-testid="stForm"] { border: none; padding: 0; }
-
-/* Codename field: label sits on the top border (Figma "outline notch") */
-.st-key-entry_panel [data-testid="stTextInput"] {
-  position: relative; padding-top: calc(var(--px) * 27);
-}
-.st-key-entry_panel [data-testid="stTextInput"] [data-testid="stWidgetLabel"] {
-  position: absolute; top: calc(var(--px) * 14); left: calc(var(--px) * 15); z-index: 2;
-  height: calc(var(--px) * 26); min-height: 0; margin: 0; padding: 0 calc(var(--px) * 8);
-  display: flex; align-items: center; background: var(--panel);
-}
-.st-key-entry_panel [data-testid="stWidgetLabel"] p {
-  margin: 0; font-family: var(--font-display); color: var(--text);
-  font-size: max(13px, calc(var(--px) * 18)); line-height: 1;
-}
-.st-key-entry_panel div[data-testid="stTextInputRootElement"] {
-  box-sizing: border-box; height: calc(var(--px) * 72); min-height: 0;
-  border: 1px solid var(--gold); border-radius: calc(var(--px) * 14); background: #0E0C09;
-}
-.st-key-entry_panel [data-baseweb="input"],
-.st-key-entry_panel [data-baseweb="base-input"] {
-  height: 100%; min-height: 0; border: 0; background: transparent;
-}
-.st-key-entry_panel div[data-testid="stTextInputRootElement"]:focus-within {
-  border-color: var(--gold-hi); box-shadow: 0 0 0 3px rgba(212, 168, 75, 0.2);
-}
-.st-key-entry_panel input {
-  height: 100%; padding: 0 calc(var(--px) * 24); color: var(--text); background: transparent;
-  font-family: var(--font-display); font-size: max(14px, calc(var(--px) * 19));
-}
-.st-key-entry_panel input::placeholder { color: var(--muted); }
-
-/* Error state: red border plus message under the field */
-.st-key-entry_panel:has(.field-error) div[data-testid="stTextInputRootElement"] { border-color: var(--danger); }
-/* Error message sits in the gap between field and button, so nothing shifts */
-.st-key-entry_panel [data-testid="stForm"] { position: relative; }
-.st-key-entry_panel [data-testid="stElementContainer"]:has(.field-error) {
-  position: absolute; left: 0; right: 0; top: calc(var(--px) * 99 + 6px);
-  margin: 0; width: auto;
-}
-.field-error {
-  margin: 0 0 0 calc(var(--px) * 4); color: var(--danger);
-  font-family: var(--font-display); font-size: max(12px, calc(var(--px) * 16));
-  line-height: 1.25;
-}
-
-/* Enter button: bevelled gold */
-.st-key-entry_panel [data-testid="stFormSubmitButton"] { margin-top: calc(var(--px) * 30); }
-.st-key-entry_panel [data-testid^="stBaseButton-primary"] {
-  --notch: calc(var(--px) * 9);
-  height: calc(var(--px) * 80); border: 1px solid #F3DDA0; border-radius: 2px;
-  background: linear-gradient(180deg, #F1D68C 0%, #D2A650 48%, #A9792B 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -2px 0 rgba(80, 50, 10, 0.35);
-  mask:
-    radial-gradient(circle var(--notch) at 0 0, #0000 98%, #000),
-    radial-gradient(circle var(--notch) at 100% 0, #0000 98%, #000),
-    radial-gradient(circle var(--notch) at 0 100%, #0000 98%, #000),
-    radial-gradient(circle var(--notch) at 100% 100%, #0000 98%, #000);
-  mask-composite: intersect;
-  -webkit-mask-composite: source-in;
-}
-.st-key-entry_panel [data-testid^="stBaseButton-primary"] p {
-  font-family: var(--font-display); font-weight: 700; letter-spacing: 0.04em;
-  font-size: max(15px, calc(var(--px) * 22)); text-transform: uppercase; color: #1A1306;
-}
-.st-key-entry_panel [data-testid^="stBaseButton-primary"]:hover { filter: brightness(1.08); }
-.st-key-entry_panel [data-testid^="stBaseButton-primary"]:focus-visible {
-  box-shadow: inset 0 0 0 3px rgba(26, 19, 6, 0.6), inset 0 0 0 5px var(--gold-hi);
-}
-
-/* ---------- Leaderboard (Figma: panel 554 x 662, list = 10 rows x 36) ---------- */
-.st-key-leaderboard_panel { padding: calc(var(--px) * 23) calc(var(--px) * 36) calc(var(--px) * 20); }
-.lb-trophy { display: flex; justify-content: center; color: var(--gold); margin-bottom: calc(var(--px) * 13); }
-.lb-trophy .icon { width: calc(var(--px) * 64); height: calc(var(--px) * 64); }
-.lb-title {
-  text-align: center; font-family: var(--font-display); font-weight: 700;
-  font-size: max(18px, calc(var(--px) * 29)); line-height: calc(var(--px) * 38);
-  letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: calc(var(--px) * 16);
-  background: var(--gold-gradient);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
-}
-
-/* Category tabs (st.segmented_control, key "lb_category") */
-.st-key-lb_category { margin-bottom: calc(var(--px) * 12); }
-.st-key-lb_category [data-testid="stButtonGroup"] { width: 100%; }
-.st-key-lb_category :is([data-testid="stButtonGroup"], div):has(> button) {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; width: 100%;
-}
-.st-key-lb_category button {
-  width: 100%; min-width: 0; min-height: calc(var(--px) * 56); margin: 0; padding: 0.2rem 0.35rem;
-  border: 1px solid var(--gold-line); border-radius: 2px; opacity: 1;
-  background: rgba(255, 255, 255, 0.015);
-}
-.st-key-lb_category button + button { margin-left: -1px; }
-.st-key-lb_category button,
-.st-key-lb_category button p { color: #E6D6A8 !important; }
-.st-key-lb_category button p {
-  font-family: var(--font-display); font-size: max(11px, calc(var(--px) * 14));
-  line-height: 1.25; text-align: center; white-space: normal; overflow: visible; text-overflow: clip;
-}
-.st-key-lb_category button:hover { background: rgba(212, 168, 75, 0.12); }
-.st-key-lb_category button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: -3px; }
-.st-key-lb_category button[kind="segmented_controlActive"],
-.st-key-lb_category [data-testid="stBaseButton-segmented_controlActive"],
-.st-key-lb_category button[aria-checked="true"],
-.st-key-lb_category button[aria-pressed="true"] {
-  background: linear-gradient(180deg, #7C5C26 0%, #4A3615 100%);
-}
-.st-key-lb_category button[kind="segmented_controlActive"] p,
-.st-key-lb_category [data-testid="stBaseButton-segmented_controlActive"] p,
-.st-key-lb_category button[aria-checked="true"] p,
-.st-key-lb_category button[aria-pressed="true"] p { color: #F3DDA0 !important; }
-
-.lb-head, .lb-row {
-  display: grid; grid-template-columns: calc(var(--px) * 72) 1fr calc(var(--px) * 110);
-  align-items: center; padding: 0 calc(var(--px) * 18); box-sizing: border-box;
-  line-height: 1.2; font-feature-settings: "lnum" 1, "tnum" 1;
-}
-.lb-head {
-  height: calc(var(--px) * 44); color: var(--text);
-  font-family: var(--font-display); font-size: max(12px, calc(var(--px) * 17));
-}
-.lb-time-h { display: flex; justify-content: flex-end; align-items: center; gap: 0.4rem; }
-.lb-time-h .icon { color: var(--gold); width: calc(var(--px) * 20); height: calc(var(--px) * 20); }
-.lb-row {
-  height: calc(var(--px) * 36); font-family: var(--font-display);
-  font-size: max(13px, calc(var(--px) * 18));
-  border-bottom: 1px solid rgba(212, 168, 75, 0.22);
-}
-.lb-row > span:first-child { color: var(--gold); }
-.lb-row.top { background: linear-gradient(90deg, rgba(212, 168, 75, 0.3), rgba(212, 168, 75, 0.04) 85%); }
-.lb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lb-time { text-align: right; font-variant-numeric: tabular-nums; }
-.lb-empty { text-align: center; color: var(--muted); padding: 3rem 0; font-family: var(--font-display); }
-.lb-scroll {
-  max-height: calc(var(--px) * 360); overflow-y: auto; overscroll-behavior: contain;
-  scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent;
-}
-.lb-scroll::-webkit-scrollbar { width: 6px; }
-.lb-scroll::-webkit-scrollbar-thumb { background: var(--gold-lo); border-radius: 3px; }
-
-@media (max-width: 900px) {
-  .st-key-leaderboard_panel, .st-key-entry_panel { height: auto; min-height: 0; padding: 1.25rem 1.1rem; }
-  .st-key-entry_panel { padding: 1.5rem 1.25rem; }
-  .lb-scroll { max-height: 320px; }
-}
-@media (max-width: 640px) {
-  .st-key-lb_category :is([data-testid="stButtonGroup"], div):has(> button) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .st-key-lb_category button + button { margin-left: 0; }
-  .lb-head, .lb-row { grid-template-columns: 2.6rem 1fr 4.5rem; padding: 0 0.5rem; }
-}
-
-/* ---------- Shared header ---------- */
+/* ---------- 3.2 App header (Briefing, Gameplay, Results) ---------- */
 .app-header {
   position: fixed; top: 0; left: 0; right: 0; z-index: 999;
   height: var(--header-h);
@@ -301,7 +96,250 @@ header[data-testid="stHeader"],
   -webkit-text-fill-color: transparent; color: transparent;
 }
 
-/* ---------- Image placeholder ---------- */
+/* ---------- 3.3 Primary buttons (all screens): dark text on gold for contrast ---------- */
+.stApp [data-testid^="stBaseButton-primary"],
+.stApp button[kind^="primary"] {
+  height: 3.4rem; font-weight: 700; letter-spacing: 0.04em; color: #0B0B0D;
+}
+.stApp [data-testid^="stBaseButton-primary"] p { color: #0B0B0D; }
+
+/* ---------- 3.4 Notched gold panels ----------
+   Quarter-circle cuts at the four corners (mask), a fine inner keyline
+   (::before) and gold arcs tracing each notch (::after). */
+.st-key-leaderboard_panel,
+.st-key-entry_panel {
+  --notch: calc(var(--px) * 16);
+  position: relative; box-sizing: border-box; overflow: hidden; gap: 0;
+  flex: 0 0 auto;                                   /* never let flex shrink the panels */
+  height: calc(var(--px) * 662); min-height: calc(var(--px) * 662);
+  background: var(--panel);
+  border: 1px solid var(--gold-line); border-radius: 0;
+}
+.st-key-leaderboard_panel > *,
+.st-key-entry_panel > * { flex-shrink: 0; }
+
+/* Same corner cut for the panels and the Enter button (each sets its own --notch) */
+.st-key-leaderboard_panel,
+.st-key-entry_panel,
+.st-key-entry_panel [data-testid^="stBaseButton-primary"] {
+  mask:
+    radial-gradient(circle var(--notch) at 0 0, #0000 98%, #000),
+    radial-gradient(circle var(--notch) at 100% 0, #0000 98%, #000),
+    radial-gradient(circle var(--notch) at 0 100%, #0000 98%, #000),
+    radial-gradient(circle var(--notch) at 100% 100%, #0000 98%, #000);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+}
+.st-key-leaderboard_panel::before,
+.st-key-entry_panel::before {
+  content: ""; position: absolute; inset: 3px; pointer-events: none;
+  border: 1px solid rgba(212, 168, 75, 0.22);
+}
+.st-key-leaderboard_panel::after,
+.st-key-entry_panel::after {
+  content: ""; position: absolute; inset: -1px; pointer-events: none;
+  background:
+    radial-gradient(circle calc(var(--notch) + 2px) at 0 0, transparent 0 var(--notch), var(--gold) var(--notch) calc(var(--notch) + 1.5px), transparent calc(var(--notch) + 1.5px)),
+    radial-gradient(circle calc(var(--notch) + 2px) at 100% 0, transparent 0 var(--notch), var(--gold) var(--notch) calc(var(--notch) + 1.5px), transparent calc(var(--notch) + 1.5px)),
+    radial-gradient(circle calc(var(--notch) + 2px) at 0 100%, transparent 0 var(--notch), var(--gold) var(--notch) calc(var(--notch) + 1.5px), transparent calc(var(--notch) + 1.5px)),
+    radial-gradient(circle calc(var(--notch) + 2px) at 100% 100%, transparent 0 var(--notch), var(--gold) var(--notch) calc(var(--notch) + 1.5px), transparent calc(var(--notch) + 1.5px));
+}
+
+
+/* =============================================================================
+   4. STARTING SCREEN  (Figma: leaderboard 554 x 662, entry 650 x 662)
+   ============================================================================= */
+
+/* ---------- 4.1 Entry panel ---------- */
+.st-key-entry_panel { padding: calc(var(--px) * 40) calc(var(--px) * 55) calc(var(--px) * 20); }
+
+.entry-emblem {
+  display: block; width: calc(var(--px) * 150); height: auto; aspect-ratio: 1;
+  margin: 0 auto calc(var(--px) * 6);
+}
+.entry-title {
+  text-align: center; font-family: var(--font-display); font-weight: 700;
+  font-size: max(24px, calc(var(--px) * 54)); line-height: calc(var(--px) * 72);
+  letter-spacing: 0.02em; text-transform: uppercase;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+.entry-tagline {
+  text-align: center; font-family: var(--font-display); color: var(--gold);
+  letter-spacing: 0.04em; font-size: max(12px, calc(var(--px) * 17));
+  line-height: calc(var(--px) * 30); margin: calc(var(--px) * 19) 0 calc(var(--px) * 39);
+}
+.entry-rule {
+  height: 2px; margin: 0 0 calc(var(--px) * 30);
+  background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
+}
+
+/* Form wrapper. Relative, so the error message can be positioned inside it. */
+.st-key-entry_panel [data-testid="stForm"] { position: relative; border: none; padding: 0; }
+
+/* Streamlit's "Press Enter to submit form" / character counter overlay */
+.st-key-entry_panel [data-testid="InputInstructions"] { display: none; }
+
+/* Codename field: the label sits on the top border (Figma "outline notch") */
+.st-key-entry_panel [data-testid="stTextInput"] {
+  position: relative; padding-top: calc(var(--px) * 27);
+}
+.st-key-entry_panel [data-testid="stTextInput"] [data-testid="stWidgetLabel"] {
+  position: absolute; top: calc(var(--px) * 14); left: calc(var(--px) * 15); z-index: 2;
+  height: calc(var(--px) * 26); min-height: 0; margin: 0; padding: 0 calc(var(--px) * 8);
+  display: flex; align-items: center; background: var(--panel);
+}
+.st-key-entry_panel [data-testid="stWidgetLabel"] p {
+  margin: 0; font-family: var(--font-display); color: var(--text);
+  font-size: max(13px, calc(var(--px) * 18)); line-height: 1;
+}
+.st-key-entry_panel div[data-testid="stTextInputRootElement"] {
+  box-sizing: border-box; height: calc(var(--px) * 72); min-height: 0;
+  border: 1px solid var(--gold); border-radius: calc(var(--px) * 14); background: var(--field);
+}
+.st-key-entry_panel [data-baseweb="input"],
+.st-key-entry_panel [data-baseweb="base-input"] {
+  height: 100%; min-height: 0; border: 0; background: transparent;
+}
+.st-key-entry_panel div[data-testid="stTextInputRootElement"]:focus-within {
+  border-color: var(--gold-hi); box-shadow: 0 0 0 3px rgba(212, 168, 75, 0.2);
+}
+.st-key-entry_panel input {
+  height: 100%; padding: 0 calc(var(--px) * 24); color: var(--text); background: transparent;
+  font-family: var(--font-display); font-size: max(14px, calc(var(--px) * 19));
+}
+.st-key-entry_panel input::placeholder { color: var(--muted); }
+
+/* Error state: red border, message overlaid in the gap above the button so
+   nothing shifts when it appears */
+.st-key-entry_panel:has(.field-error) div[data-testid="stTextInputRootElement"] {
+  border-color: var(--danger);
+}
+.st-key-entry_panel [data-testid="stElementContainer"]:has(.field-error) {
+  position: absolute; left: 0; right: 0; top: calc(var(--px) * 99 + 6px);
+  margin: 0; width: auto;
+}
+.field-error {
+  margin: 0 0 0 calc(var(--px) * 4); color: var(--danger);
+  font-family: var(--font-display); font-size: max(12px, calc(var(--px) * 16));
+  line-height: 1.25;
+}
+
+/* Enter button: bevelled gold (corner cut is the shared mask in 3.4) */
+.st-key-entry_panel [data-testid="stFormSubmitButton"] { margin-top: calc(var(--px) * 30); }
+.st-key-entry_panel [data-testid^="stBaseButton-primary"] {
+  --notch: calc(var(--px) * 9);
+  height: calc(var(--px) * 80); border: 1px solid var(--gold-pale); border-radius: 2px;
+  background: linear-gradient(180deg, #F1D68C 0%, #D2A650 48%, #A9792B 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -2px 0 rgba(80, 50, 10, 0.35);
+}
+.st-key-entry_panel [data-testid^="stBaseButton-primary"] p {
+  font-family: var(--font-display); font-weight: 700; letter-spacing: 0.04em;
+  font-size: max(15px, calc(var(--px) * 22)); text-transform: uppercase; color: var(--ink);
+}
+.st-key-entry_panel [data-testid^="stBaseButton-primary"]:hover { filter: brightness(1.08); }
+.st-key-entry_panel [data-testid^="stBaseButton-primary"]:focus-visible {
+  box-shadow: inset 0 0 0 3px rgba(26, 19, 6, 0.6), inset 0 0 0 5px var(--gold-hi);
+}
+
+/* ---------- 4.2 Leaderboard ---------- */
+.st-key-leaderboard_panel { padding: calc(var(--px) * 23) calc(var(--px) * 36) calc(var(--px) * 20); }
+
+.lb-trophy { display: flex; justify-content: center; color: var(--gold); margin-bottom: calc(var(--px) * 13); }
+.lb-trophy .icon { width: calc(var(--px) * 64); height: calc(var(--px) * 64); }
+.lb-title {
+  text-align: center; font-family: var(--font-display); font-weight: 700;
+  font-size: max(18px, calc(var(--px) * 29)); line-height: calc(var(--px) * 38);
+  letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: calc(var(--px) * 16);
+  background: var(--gold-gradient);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+
+/* Category tabs (st.segmented_control, key "lb_category") */
+.st-key-lb_category { margin-bottom: calc(var(--px) * 12); }
+.st-key-lb_category [data-testid="stButtonGroup"] { width: 100%; }
+/* whichever element directly holds the buttons becomes the 4-column grid */
+.st-key-lb_category :is([data-testid="stButtonGroup"], div):has(> button) {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; width: 100%;
+}
+.st-key-lb_category button {
+  width: 100%; min-width: 0; min-height: calc(var(--px) * 56); margin: 0; padding: 0.2rem 0.35rem;
+  border: 1px solid var(--gold-line); border-radius: 2px; opacity: 1;
+  background: rgba(255, 255, 255, 0.015);
+}
+.st-key-lb_category button + button { margin-left: -1px; }
+.st-key-lb_category button,
+.st-key-lb_category button p { color: var(--cream) !important; }
+.st-key-lb_category button p {
+  font-family: var(--font-display); font-size: max(11px, calc(var(--px) * 14));
+  line-height: 1.25; text-align: center; white-space: normal; overflow: visible; text-overflow: clip;
+}
+.st-key-lb_category button:hover { background: rgba(212, 168, 75, 0.12); }
+.st-key-lb_category button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: -3px; }
+.st-key-lb_category button[kind="segmented_controlActive"],
+.st-key-lb_category [data-testid="stBaseButton-segmented_controlActive"],
+.st-key-lb_category button[aria-checked="true"],
+.st-key-lb_category button[aria-pressed="true"] {
+  background: linear-gradient(180deg, #7C5C26 0%, #4A3615 100%);
+}
+.st-key-lb_category button[kind="segmented_controlActive"] p,
+.st-key-lb_category [data-testid="stBaseButton-segmented_controlActive"] p,
+.st-key-lb_category button[aria-checked="true"] p,
+.st-key-lb_category button[aria-pressed="true"] p { color: var(--gold-pale) !important; }
+
+/* Table */
+.lb-head, .lb-row {
+  display: grid; grid-template-columns: calc(var(--px) * 72) 1fr calc(var(--px) * 110);
+  align-items: center; padding: 0 calc(var(--px) * 18); box-sizing: border-box;
+  line-height: 1.2; font-feature-settings: "lnum" 1, "tnum" 1;
+}
+.lb-head {
+  height: calc(var(--px) * 44); color: var(--text);
+  font-family: var(--font-display); font-size: max(12px, calc(var(--px) * 17));
+}
+.lb-time-h { display: flex; justify-content: flex-end; align-items: center; gap: 0.4rem; }
+.lb-time-h .icon { color: var(--gold); width: calc(var(--px) * 20); height: calc(var(--px) * 20); }
+.lb-row {
+  height: calc(var(--px) * 36); font-family: var(--font-display);
+  font-size: max(13px, calc(var(--px) * 18));
+  border-bottom: 1px solid rgba(212, 168, 75, 0.22);
+}
+.lb-row > span:first-child { color: var(--gold); }
+.lb-row.top { background: linear-gradient(90deg, rgba(212, 168, 75, 0.3), rgba(212, 168, 75, 0.04) 85%); }
+.lb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-time { text-align: right; font-variant-numeric: tabular-nums; }
+.lb-empty { text-align: center; color: var(--muted); padding: 3rem 0; font-family: var(--font-display); }
+
+/* Rows scroll inside the panel (Figma shows 10), so the panel never grows */
+.lb-scroll {
+  max-height: calc(var(--px) * 360); overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent;
+}
+.lb-scroll::-webkit-scrollbar { width: 6px; }
+.lb-scroll::-webkit-scrollbar-thumb { background: var(--gold-lo); border-radius: 3px; }
+
+/* ---------- 4.3 Responsive ---------- */
+@media (max-width: 900px) {
+  .st-key-leaderboard_panel, .st-key-entry_panel { height: auto; min-height: 0; padding: 1.25rem 1.1rem; }
+  .st-key-entry_panel { padding: 1.5rem 1.25rem; }
+  .lb-scroll { max-height: 320px; }
+}
+@media (max-width: 640px) {
+  .st-key-lb_category :is([data-testid="stButtonGroup"], div):has(> button) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .st-key-lb_category button + button { margin-left: 0; }
+  .lb-head, .lb-row { grid-template-columns: 2.6rem 1fr 4.5rem; padding: 0 0.5rem; }
+}
+
+
+/* =============================================================================
+   5. LEGACY STYLES (the old look)
+   Left untouched until each screen is rebuilt to the Figma design. Delete each
+   block once its screen has been replaced.
+   ============================================================================= */
+
+/* ---------- 5.1 Shared: image placeholder and cards ---------- */
 .img-slot {
   width: 100%; display: flex; flex-direction: column;
   align-items: center; justify-content: center; text-align: center;
@@ -313,7 +351,16 @@ header[data-testid="stHeader"],
 }
 .img-slot-caption { color: var(--muted); margin-top: 0.4rem; }
 
-/* ---------- Mission briefing ---------- */
+/* Cards: any container whose key starts with "card_" */
+div[class*="st-key-card_"] {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 1.25rem 1.4rem;
+}
+.card-title { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.35rem; }
+.card-sub { font-weight: 500; margin-bottom: 0.9rem; }
+.card-text { color: #CFCABF; line-height: 1.55; }
+
+/* ---------- 5.2 Mission briefing (Milestone 3) ---------- */
 .brief-eyebrow {
   color: var(--muted); font-size: 0.8rem; font-weight: 600;
   letter-spacing: 0.22em; text-transform: uppercase;
@@ -333,16 +380,9 @@ header[data-testid="stHeader"],
 .brief-text { color: #CFCABF; line-height: 1.55; }
 .brief-text ul { margin: 0.25rem 0 0; padding-left: 1.1rem; }
 
+.st-key-start_action { margin-top: 1.5rem; }
 
-/* ---------- Cards (any container whose key starts with "card_") ---------- */
-div[class*="st-key-card_"] {
-  background: var(--panel); border: 1px solid var(--line);
-  border-radius: 10px; padding: 1.25rem 1.4rem;
-}
-.card-title { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.35rem; }
-.card-sub { font-weight: 500; margin-bottom: 0.9rem; }
-.card-text { color: #CFCABF; line-height: 1.55; }
-
+/* ---------- 5.3 Gameplay (Milestone 4) ---------- */
 /* Mission briefing card: collapsible, no inner border */
 div[class*="st-key-card_briefing"] [data-testid="stExpander"] { border: none; }
 div[class*="st-key-card_briefing"] [data-testid="stExpander"] summary {
@@ -355,8 +395,7 @@ div[class*="st-key-card_briefing"] [data-testid="stExpander"] summary {
 .obj.done { color: var(--muted); }
 .obj.done .obj-box { color: var(--gold); }
 
-
-/* ---------- Scene and dialogue ---------- */
+/* Scene and dialogue */
 div[class*="st-key-card_scene"] { padding: 0; overflow: hidden; }
 .scene {
   position: relative; width: 100%; aspect-ratio: 914 / 640; background: var(--panel-2);
@@ -381,14 +420,13 @@ div[class*="st-key-card_scene"] { padding: 0; overflow: hidden; }
   max-height: 8.5rem; overflow-y: auto;
 }
 
-/* ---------- Response bar ---------- */
+/* Response bar */
 .st-key-response_bar { margin-top: 0.25rem; }
 .st-key-response_bar [data-testid="stForm"] { padding: 0; }
 .st-key-response_bar textarea { font-size: 1.1rem; }
 .stApp .st-key-response_bar [data-testid^="stBaseButton-primary"] { height: 96px; }
 
-
-/* ---------- Suspicion meter ---------- */
+/* Suspicion meter */
 .susp-value { font-size: 2.6rem; font-weight: 700; text-align: center; line-height: 1.1; margin: 0.4rem 0 0.9rem; }
 .susp-value span { font-size: 1.2rem; font-weight: 500; color: var(--muted); }
 .susp-track {
@@ -400,7 +438,7 @@ div[class*="st-key-card_scene"] { padding: 0; overflow: hidden; }
 .susp-fill.high { background: #C0392B; }
 .susp-label { text-align: center; color: var(--muted); margin-top: 0.7rem; }
 
-/* ---------- Inventory ---------- */
+/* Inventory */
 .item-icon {
   width: 100%; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
   background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
@@ -418,8 +456,7 @@ div[class*="st-key-item_"] button {
 }
 div[class*="st-key-item_"] button p { text-align: left; }
 
-
-/* ---------- Results ---------- */
+/* ---------- 5.4 Results (Milestone 5) ---------- */
 .result-scene {
   position: relative; width: 100%; aspect-ratio: 1; overflow: hidden;
   background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;
@@ -467,5 +504,3 @@ div[class*="st-key-item_"] button p { text-align: left; }
 
 .st-key-result_actions { margin-top: 1.5rem; }
 .st-key-result_actions button { height: 3.4rem; font-weight: 700; letter-spacing: 0.04em; }
-
-.st-key-start_action { margin-top: 1.5rem; }
