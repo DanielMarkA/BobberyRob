@@ -57,12 +57,9 @@ header[data-testid="stHeader"],
 
 .block-container { max-width: 1280px; padding-top: 3rem; }
 
-/* Helper elements (header, screen markers) must not add flex gap to the page */
+/* The fixed header must not add flex gap to the page */
 [data-testid="stElementContainer"]:has(.app-header) {
   position: absolute; width: 0; height: 0; margin: 0;
-}
-[data-testid="stElementContainer"]:has(.screen-marker) {
-  position: absolute; width: 0; height: 0; margin: 0; overflow: hidden;
 }
 
 
@@ -103,22 +100,60 @@ header[data-testid="stHeader"],
 }
 .stApp [data-testid^="stBaseButton-primary"] p { color: #0B0B0D; }
 
-/* ---------- 3.4 Notched gold panels ----------
-   Quarter-circle cuts at the four corners (mask), a fine inner keyline
-   (::before) and gold arcs tracing each notch (::after). */
+/* =============================================================================
+   4. MAIN MENU
+   ============================================================================= */
+.stApp:has(.st-key-main_menu) {
+  --menu-step: clamp(0.5625rem, 1.7dvh, 1rem);
+  --menu-gutter: clamp(0.875rem, 3dvh, 2rem);
+  --menu-row: calc(2.25 * var(--menu-step));
+  --menu-gold: #e4c375;
+  background: url("/app/static/backgrounds/museum_blur.webp") center / cover no-repeat, var(--bg);
+}
+.stApp:has(.st-key-main_menu) .block-container {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+  max-inline-size: clamp(50rem, 77vw, 82rem);
+  padding: var(--menu-gutter);
+}
+.stApp:has(.st-key-main_menu) .block-container > [data-testid="stVerticalBlock"] {
+  flex: 1 0 auto;
+  justify-content: center;
+  gap: 0;
+}
+.st-key-main_menu [data-testid="stHorizontalBlock"] {
+  display: grid;
+  grid-template-columns: minmax(0, 0.46fr) minmax(0, 0.54fr);
+  gap: clamp(0.75rem, 1.5vw, 1.5rem);
+}
+.st-key-main_menu [data-testid="stColumn"] {
+  display: flex;
+  inline-size: auto;
+  min-inline-size: 0;
+}
+.st-key-main_menu [data-testid="stColumn"] > [data-testid="stVerticalBlock"],
+.st-key-main_menu [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stLayoutWrapper"] {
+  flex: 1;
+}
+@media (min-width: 901px) {
+  .st-key-main_menu [data-testid="stColumn"]:first-child { grid-area: 1 / 2; }
+  .st-key-main_menu [data-testid="stColumn"]:last-child { grid-area: 1 / 1; }
+}
+
+/* Notches on the panels and the entry button share the same corner treatment. */
 .st-key-leaderboard_panel,
 .st-key-entry_panel {
-  --notch: calc(var(--px) * 16);
-  position: relative; box-sizing: border-box; overflow: hidden; gap: 0;
-  flex: 0 0 auto;                                   /* never let flex shrink the panels */
-  height: calc(var(--px) * 662); min-height: calc(var(--px) * 662);
-  background: var(--panel);
-  border: 1px solid var(--gold-line); border-radius: 0;
+  --notch: calc(1.05 * var(--menu-step));
+  position: relative;
+  flex: 1;
+  min-block-size: min(70dvh, 42rem);
+  gap: 0;
+  background: linear-gradient(180deg, #15140f, #090909 55%, #12110d);
+  border: 1px solid #9f8149;
+  border-radius: 0;
+  box-shadow: inset 0 0 0 1px #b68e4c38;
 }
-.st-key-leaderboard_panel > *,
-.st-key-entry_panel > * { flex-shrink: 0; }
-
-/* Same corner cut for the panels and the Enter button (each sets its own --notch) */
 .st-key-leaderboard_panel,
 .st-key-entry_panel,
 .st-key-entry_panel [data-testid^="stBaseButton-primary"] {
@@ -130,13 +165,9 @@ header[data-testid="stHeader"],
   mask-composite: intersect;
   -webkit-mask-composite: source-in;
 }
-.st-key-leaderboard_panel::before,
-.st-key-entry_panel::before {
-  content: ""; position: absolute; inset: 3px; pointer-events: none;
-  border: 1px solid rgba(212, 168, 75, 0.22);
-}
 .st-key-leaderboard_panel::after,
 .st-key-entry_panel::after {
+  /* Trace the cut edges without a fixed-size border image. */
   content: ""; position: absolute; inset: -1px; pointer-events: none;
   background:
     radial-gradient(circle calc(var(--notch) + 2px) at 0 0, transparent 0 var(--notch), var(--gold) var(--notch) calc(var(--notch) + 1.5px), transparent calc(var(--notch) + 1.5px)),
@@ -145,191 +176,195 @@ header[data-testid="stHeader"],
     radial-gradient(circle calc(var(--notch) + 2px) at 100% 100%, transparent 0 var(--notch), var(--gold) var(--notch) calc(var(--notch) + 1.5px), transparent calc(var(--notch) + 1.5px));
 }
 
-
-/* =============================================================================
-   4. STARTING SCREEN  (Figma: leaderboard 554 x 662, entry 650 x 662)
-   ============================================================================= */
-
 /* ---------- 4.1 Entry panel ---------- */
-.st-key-entry_panel { padding: calc(var(--px) * 40) calc(var(--px) * 55) calc(var(--px) * 20); }
-
-.entry-emblem {
-  display: block; width: calc(var(--px) * 150); height: auto; aspect-ratio: 1;
-  margin: 0 auto calc(var(--px) * 6);
+.st-key-entry_panel {
+  padding: calc(2.5 * var(--menu-step)) clamp(1.25rem, 3.2vw, 3.5rem);
 }
-.entry-title {
-  text-align: center; font-family: var(--font-display); font-weight: 700;
-  font-size: max(24px, calc(var(--px) * 54)); line-height: calc(var(--px) * 72);
-  letter-spacing: 0.02em; text-transform: uppercase;
-  background: var(--gold-gradient);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
+.entry-emblem {
+  display: block; inline-size: calc(8.5 * var(--menu-step)); aspect-ratio: 1;
+  margin: 0 auto calc(0.55 * var(--menu-step));
+}
+.st-key-main_menu :is(h1.entry-title, h2.lb-title) {
+  padding: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--menu-gold);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.st-key-entry_panel h1.entry-title {
+  margin: 0;
+  font-size: clamp(1.55rem, min(3.6vw, calc(2.9 * var(--menu-step))), 2.9rem);
+  line-height: 1.2;
+  letter-spacing: 0.015em;
 }
 .entry-tagline {
-  text-align: center; font-family: var(--font-display); color: var(--gold);
-  letter-spacing: 0.04em; font-size: max(12px, calc(var(--px) * 17));
-  line-height: calc(var(--px) * 30); margin: calc(var(--px) * 19) 0 calc(var(--px) * 39);
+  text-align: center; font-family: var(--font-display); color: var(--menu-gold);
+  letter-spacing: 0.03em; font-size: clamp(0.75rem, var(--menu-step), 1rem);
+  line-height: 1.5; margin: calc(2.75 * var(--menu-step)) 0 calc(2.55 * var(--menu-step));
 }
 .entry-rule {
-  height: 2px; margin: 0 0 calc(var(--px) * 30);
+  height: 1px; margin-block-end: calc(2.95 * var(--menu-step));
   background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
 }
 
-/* Form wrapper. Relative, so the error message can be positioned inside it. */
-.st-key-entry_panel [data-testid="stForm"] { position: relative; border: none; padding: 0; }
-
-/* Streamlit's "Press Enter to submit form" / character counter overlay */
+.st-key-entry_panel [data-testid="stForm"] { border: none; padding: 0; }
+.st-key-entry_panel [data-testid="stForm"] > [data-testid="stVerticalBlock"] {
+  gap: calc(2.2 * var(--menu-step));
+}
+.st-key-entry_panel [data-testid="stForm"]:has(.field-error) > [data-testid="stVerticalBlock"] {
+  gap: calc(0.9 * var(--menu-step));
+}
 .st-key-entry_panel [data-testid="InputInstructions"] { display: none; }
 
-/* Codename field: the label sits on the top border (Figma "outline notch") */
+/* Keep the native label on the outline and validation in the form flow. */
 .st-key-entry_panel [data-testid="stTextInput"] {
-  position: relative; padding-top: calc(var(--px) * 27);
+  position: relative; padding-block-start: 0.6rem;
 }
 .st-key-entry_panel [data-testid="stTextInput"] [data-testid="stWidgetLabel"] {
-  position: absolute; top: calc(var(--px) * 14); left: calc(var(--px) * 15); z-index: 2;
-  height: calc(var(--px) * 26); min-height: 0; margin: 0; padding: 0 calc(var(--px) * 8);
-  display: flex; align-items: center; background: var(--panel);
+  position: absolute; inset-block-start: 0.1rem; inset-inline-start: 0.8rem; z-index: 1;
+  min-block-size: 0; margin: 0; padding-inline: 0.4rem;
+  background: #0d0c09;
 }
 .st-key-entry_panel [data-testid="stWidgetLabel"] p {
   margin: 0; font-family: var(--font-display); color: var(--text);
-  font-size: max(13px, calc(var(--px) * 18)); line-height: 1;
+  font-size: clamp(0.8125rem, calc(1.08 * var(--menu-step)), 1.125rem); line-height: 1;
 }
 .st-key-entry_panel div[data-testid="stTextInputRootElement"] {
-  box-sizing: border-box; height: calc(var(--px) * 72); min-height: 0;
-  border: 1px solid var(--gold); border-radius: calc(var(--px) * 14); background: var(--field);
-}
-.st-key-entry_panel [data-baseweb="input"],
-.st-key-entry_panel [data-baseweb="base-input"] {
-  height: 100%; min-height: 0; border: 0; background: transparent;
+  box-sizing: border-box; block-size: max(2.75rem, calc(4.5 * var(--menu-step)));
+  border: 1px solid #927943; border-radius: 0.6rem;
+  background: linear-gradient(180deg, #0b0a08, #13110b);
 }
 .st-key-entry_panel div[data-testid="stTextInputRootElement"]:focus-within {
   border-color: var(--gold-hi); box-shadow: 0 0 0 3px rgba(212, 168, 75, 0.2);
 }
 .st-key-entry_panel input {
-  height: 100%; padding: 0 calc(var(--px) * 24); color: var(--text); background: transparent;
-  font-family: var(--font-display); font-size: max(14px, calc(var(--px) * 19));
+  block-size: 100%; padding: 0 1.1rem; color: var(--text); background: transparent;
+  caret-color: var(--gold-hi);
+  font-family: var(--font-display); font-size: clamp(1rem, calc(1.2 * var(--menu-step)), 1.2rem);
 }
-.st-key-entry_panel input::placeholder { color: var(--muted); }
-
-/* Error state: red border, message overlaid in the gap above the button so
-   nothing shifts when it appears */
+.st-key-main_menu ::selection { background: var(--gold-hi); color: var(--ink); }
 .st-key-entry_panel:has(.field-error) div[data-testid="stTextInputRootElement"] {
   border-color: var(--danger);
 }
-.st-key-entry_panel [data-testid="stElementContainer"]:has(.field-error) {
-  position: absolute; left: 0; right: 0; top: calc(var(--px) * 99 + 6px);
-  margin: 0; width: auto;
-}
 .field-error {
-  margin: 0 0 0 calc(var(--px) * 4); color: var(--danger);
-  font-family: var(--font-display); font-size: max(12px, calc(var(--px) * 16));
-  line-height: 1.25;
+  color: var(--danger); font-size: 0.875rem; line-height: 1.35;
 }
 
-/* Enter button: bevelled gold (corner cut is the shared mask in 3.4) */
-.st-key-entry_panel [data-testid="stFormSubmitButton"] { margin-top: calc(var(--px) * 30); }
-.st-key-entry_panel [data-testid^="stBaseButton-primary"] {
-  --notch: calc(var(--px) * 9);
-  height: calc(var(--px) * 80); border: 1px solid var(--gold-pale); border-radius: 2px;
-  background: linear-gradient(180deg, #F1D68C 0%, #D2A650 48%, #A9792B 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -2px 0 rgba(80, 50, 10, 0.35);
+.st-key-main_menu .st-key-entry_panel [data-testid^="stBaseButton-primary"] {
+  --notch: calc(0.64 * var(--menu-step));
+  height: max(2.75rem, calc(4.8 * var(--menu-step)));
+  border: 1px solid var(--gold-pale); border-radius: 0;
+  background: linear-gradient(180deg, #f6d89c, #b5863f 12%, #dab371 53%, #a27539);
+  box-shadow: inset 0 1px 0 #fff8, inset 0 -2px 0 #50320a59;
 }
 .st-key-entry_panel [data-testid^="stBaseButton-primary"] p {
-  font-family: var(--font-display); font-weight: 700; letter-spacing: 0.04em;
-  font-size: max(15px, calc(var(--px) * 22)); text-transform: uppercase; color: var(--ink);
+  font-family: var(--font-display); font-weight: 700; letter-spacing: 0.015em;
+  font-size: clamp(0.875rem, calc(1.23 * var(--menu-step)), 1.25rem);
+  text-transform: uppercase; color: var(--ink);
 }
 .st-key-entry_panel [data-testid^="stBaseButton-primary"]:hover { filter: brightness(1.08); }
 .st-key-entry_panel [data-testid^="stBaseButton-primary"]:focus-visible {
-  box-shadow: inset 0 0 0 3px rgba(26, 19, 6, 0.6), inset 0 0 0 5px var(--gold-hi);
+  box-shadow: inset 0 0 0 3px var(--ink), inset 0 0 0 5px var(--gold-hi);
 }
 
 /* ---------- 4.2 Leaderboard ---------- */
-.st-key-leaderboard_panel { padding: calc(var(--px) * 23) calc(var(--px) * 36) calc(var(--px) * 20); }
-
-.lb-trophy { display: flex; justify-content: center; color: var(--gold); margin-bottom: calc(var(--px) * 13); }
-.lb-trophy .icon { width: calc(var(--px) * 64); height: calc(var(--px) * 64); }
-.lb-title {
-  text-align: center; font-family: var(--font-display); font-weight: 700;
-  font-size: max(18px, calc(var(--px) * 29)); line-height: calc(var(--px) * 38);
-  letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: calc(var(--px) * 16);
-  background: var(--gold-gradient);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-fill-color: transparent; color: transparent;
+.st-key-leaderboard_panel {
+  padding: calc(1.55 * var(--menu-step)) clamp(1rem, 2.1vw, 2.25rem);
 }
-
+.lb-trophy {
+  inline-size: calc(3.5 * var(--menu-step));
+  aspect-ratio: 1;
+  margin: 0 auto calc(0.6 * var(--menu-step));
+  background: var(--menu-gold);
+  mask: url("/app/static/icons/trophy.svg") center / contain no-repeat;
+}
+.st-key-leaderboard_panel h2.lb-title {
+  font-size: clamp(1rem, min(2vw, calc(1.65 * var(--menu-step))), 1.65rem);
+  line-height: 1.25;
+  letter-spacing: 0.025em;
+  margin: 0;
+}
 /* Category tabs (st.segmented_control, key "lb_category") */
-.st-key-lb_category { margin-bottom: calc(var(--px) * 12); }
+.st-key-lb_category {
+  align-self: stretch;
+  width: 100%;
+  margin-block: calc(0.75 * var(--menu-step)) calc(0.6 * var(--menu-step));
+}
 .st-key-lb_category [data-testid="stButtonGroup"] { width: 100%; }
-/* whichever element directly holds the buttons becomes the 4-column grid */
-.st-key-lb_category :is([data-testid="stButtonGroup"], div):has(> button) {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; width: 100%;
+.st-key-lb_category div:has(> button) {
+  display: grid;
+  grid-template-columns: minmax(0, 0.84fr) minmax(0, 0.97fr) minmax(0, 1.24fr) minmax(0, 0.95fr);
+  gap: 1px;
+  padding: 1px;
+  border-radius: 0.2rem;
+  background: #5a4728;
+  width: 100%;
 }
 .st-key-lb_category button {
-  width: 100%; min-width: 0; min-height: calc(var(--px) * 56); margin: 0; padding: 0.2rem 0.35rem;
-  border: 1px solid var(--gold-line); border-radius: 2px; opacity: 1;
-  background: rgba(255, 255, 255, 0.015);
+  width: 100%; min-width: 0; min-height: max(2.125rem, calc(3.35 * var(--menu-step)));
+  margin: 0; padding: 0.22rem 0.1rem; border: 0; border-radius: 0; opacity: 1;
+  background: linear-gradient(180deg, #1c180e, #0d0c09);
 }
-.st-key-lb_category button + button { margin-left: -1px; }
 .st-key-lb_category button,
 .st-key-lb_category button p { color: var(--cream) !important; }
 .st-key-lb_category button p {
-  font-family: var(--font-display); font-size: max(11px, calc(var(--px) * 14));
-  line-height: 1.25; text-align: center; white-space: normal; overflow: visible; text-overflow: clip;
+  inline-size: min-content;
+  font-family: var(--font-display);
+  font-size: clamp(0.6875rem, min(0.94vw, calc(0.83 * var(--menu-step))), 0.875rem);
+  line-height: 1.25; text-align: center; white-space: normal;
+  overflow: visible; text-overflow: clip; overflow-wrap: normal; word-break: normal;
 }
-.st-key-lb_category button:hover { background: rgba(212, 168, 75, 0.12); }
+.st-key-lb_category button:hover { background: #2c2111; }
 .st-key-lb_category button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: -3px; }
 .st-key-lb_category button[kind="segmented_controlActive"],
 .st-key-lb_category [data-testid="stBaseButton-segmented_controlActive"],
 .st-key-lb_category button[aria-checked="true"],
 .st-key-lb_category button[aria-pressed="true"] {
-  background: linear-gradient(180deg, #7C5C26 0%, #4A3615 100%);
+  background: linear-gradient(180deg, #775521, #3a2812);
 }
 .st-key-lb_category button[kind="segmented_controlActive"] p,
 .st-key-lb_category [data-testid="stBaseButton-segmented_controlActive"] p,
 .st-key-lb_category button[aria-checked="true"] p,
 .st-key-lb_category button[aria-pressed="true"] p { color: var(--gold-pale) !important; }
 
-/* Table */
-.lb-head, .lb-row {
-  display: grid; grid-template-columns: calc(var(--px) * 72) 1fr calc(var(--px) * 110);
-  align-items: center; padding: 0 calc(var(--px) * 18); box-sizing: border-box;
-  line-height: 1.2; font-feature-settings: "lnum" 1, "tnum" 1;
+.lb-table {
+  width: 100%; table-layout: fixed; border-collapse: collapse;
+  font-family: var(--font-display);
+  font-size: clamp(0.8125rem, calc(1.08 * var(--menu-step)), 1.125rem);
+  line-height: 1.2; font-variant-numeric: lining-nums tabular-nums;
 }
-.lb-head {
-  height: calc(var(--px) * 44); color: var(--text);
-  font-family: var(--font-display); font-size: max(12px, calc(var(--px) * 17));
+.lb-rank-col { width: 19%; }
+.lb-time-col { width: max(4rem, 23%); }
+.lb-table th, .lb-table td { padding: 0 0.65rem; border: 0; text-align: start; }
+.lb-table th { height: calc(2.55 * var(--menu-step)); font-weight: 400; }
+.lb-table tbody tr {
+  height: var(--menu-row);
+  border-block-end: 1px solid #d4a84b33;
 }
-.lb-time-h { display: flex; justify-content: flex-end; align-items: center; gap: 0.4rem; }
-.lb-time-h .icon { color: var(--gold); width: calc(var(--px) * 20); height: calc(var(--px) * 20); }
-.lb-row {
-  height: calc(var(--px) * 36); font-family: var(--font-display);
-  font-size: max(13px, calc(var(--px) * 18));
-  border-bottom: 1px solid rgba(212, 168, 75, 0.22);
-}
-.lb-row > span:first-child { color: var(--gold); }
-.lb-row.top { background: linear-gradient(90deg, rgba(212, 168, 75, 0.3), rgba(212, 168, 75, 0.04) 85%); }
+.lb-table tbody tr:last-child { border: 0; }
+.lb-table tbody td:first-child { color: var(--menu-gold); }
+.lb-table :is(th, td):last-child { text-align: end; }
+.lb-table tr.top { background: linear-gradient(90deg, #4c3519, #362613); }
 .lb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lb-time { text-align: right; font-variant-numeric: tabular-nums; }
-.lb-empty { text-align: center; color: var(--muted); padding: 3rem 0; font-family: var(--font-display); }
-
-/* Rows scroll inside the panel (Figma shows 10), so the panel never grows */
-.lb-scroll {
-  max-height: calc(var(--px) * 360); overflow-y: auto; overscroll-behavior: contain;
-  scrollbar-width: thin; scrollbar-color: var(--gold-lo) transparent;
+.lb-empty, .lb-table td.lb-empty {
+  text-align: center; color: var(--muted); padding: 2rem 0.5rem; font-family: var(--font-display);
 }
-.lb-scroll::-webkit-scrollbar { width: 6px; }
-.lb-scroll::-webkit-scrollbar-thumb { background: var(--gold-lo); border-radius: 3px; }
 
 /* ---------- 4.3 Responsive ---------- */
 @media (max-width: 900px) {
-  .st-key-leaderboard_panel, .st-key-entry_panel { height: auto; min-height: 0; padding: 1.25rem 1.1rem; }
-  .st-key-entry_panel { padding: 1.5rem 1.25rem; }
-  .lb-scroll { max-height: 320px; }
+  .stApp:has(.st-key-main_menu) { --menu-step: 0.875rem; }
+  .stApp:has(.st-key-main_menu) .block-container { max-inline-size: 37rem; }
+  .st-key-main_menu [data-testid="stHorizontalBlock"] { grid-template-columns: minmax(0, 1fr); }
+  .st-key-leaderboard_panel, .st-key-entry_panel { min-block-size: 0; }
+  .st-key-leaderboard_panel h2.lb-title { font-size: 1.35rem; }
+  .st-key-entry_panel h1.entry-title { font-size: clamp(1.65rem, 6.5vw, 2.5rem); }
+  .st-key-lb_category button { min-height: 2.75rem; }
 }
-@media (max-width: 640px) {
-  .st-key-lb_category :is([data-testid="stButtonGroup"], div):has(> button) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .st-key-lb_category button + button { margin-left: 0; }
-  .lb-head, .lb-row { grid-template-columns: 2.6rem 1fr 4.5rem; padding: 0 0.5rem; }
+@media (max-width: 420px) {
+  .st-key-lb_category div:has(> button) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .st-key-lb_category button p { inline-size: auto; }
 }
 
 

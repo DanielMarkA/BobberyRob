@@ -27,12 +27,11 @@ def _submit() -> None:
 
 def render() -> None:
     with st.container(key="entry_panel"):
-        st.markdown(
+        st.html(
             '<img class="entry-emblem" src="/app/static/brand/emblem.webp" alt="">'
-            '<div class="entry-title">Bobbery Rob</div>'
+            '<h1 class="entry-title">Bobbery Rob</h1>'
             '<div class="entry-tagline">Your identity is your greatest weapon.</div>'
-            '<div class="entry-rule"></div>',
-            unsafe_allow_html=True,
+            '<div class="entry-rule"></div>'
         )
 
         error = st.session_state.get("entry_error")
@@ -45,9 +44,8 @@ def render() -> None:
                 max_chars=32,  # generic safety cap only, real rules come from the backend
             )
             if error:
-                st.markdown(
-                    f'<div class="field-error" role="alert">{html.escape(str(error))}</div>',
-                    unsafe_allow_html=True,
+                st.html(
+                    f'<div class="field-error" role="alert">{html.escape(str(error))}</div>'
                 )
             st.form_submit_button(
                 "Enter game", type="primary", width="stretch", on_click=_submit

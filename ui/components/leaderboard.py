@@ -4,51 +4,49 @@ import streamlit as st
 
 from ui.data_provider import RUN_CATEGORIES, get_leaderboard
 from ui.formatting import format_time
-from ui.icons import icon
 
 
 def render() -> None:
     with st.container(key="leaderboard_panel"):
-        st.markdown(
-            f'<div class="lb-trophy">{icon("trophy", 64)}</div>'
-            '<div class="lb-title">Global Leaderboard</div>',
-            unsafe_allow_html=True,
+        st.html(
+            '<div class="lb-trophy" aria-hidden="true"></div>'
+            '<h2 id="leaderboard-title" class="lb-title">Global Leaderboard</h2>'
         )
 
-        # segmented_control returns None if the user un-selects, so fall back.
         category = st.segmented_control(
             "Run category",
             RUN_CATEGORIES,
             default=RUN_CATEGORIES[0],
+            required=True,
             key="lb_category",
             label_visibility="collapsed",
+            width="stretch",
         ) or RUN_CATEGORIES[0]
 
         try:
             entries = get_leaderboard(category)
         except Exception:
-            st.markdown('<div class="lb-empty">Leaderboard unavailable right now.</div>',
-                        unsafe_allow_html=True)
+            st.html('<div class="lb-empty" role="status">Leaderboard unavailable right now.</div>')
             return
 
-        header = (
-            '<div class="lb-head"><span>#</span><span>Player</span>'
-            f'<span class="lb-time-h">{icon("timer", 18)}Time</span></div>'
+        table_start = (
+            '<table class="lb-table" aria-labelledby="leaderboard-title">'
+            '<colgroup><col class="lb-rank-col"><col><col class="lb-time-col"></colgroup>'
+            '<thead><tr><th scope="col">#</th><th scope="col">Player</th>'
+            '<th scope="col">Time</th></tr></thead><tbody>'
         )
 
         if not entries:
-            body = '<div class="lb-empty">No runs recorded yet.</div>'
+            body = '<tr><td class="lb-empty" colspan="3">No runs recorded yet.</td></tr>'
         else:
             rows = []
             for e in entries:
-                top = " top" if e["rank"] == 1 else ""
+                top = ' class="top"' if e["rank"] == 1 else ""
                 rows.append(
-                    f'<div class="lb-row{top}">'
-                    f'<span>{e["rank"]}.</span>'
-                    f'<span class="lb-name">{html.escape(str(e["player"]))}</span>'
-                    f'<span class="lb-time">{format_time(e["time_seconds"])}</span>'
-                    f'</div>'
+                    f'<tr{top}><td>{e["rank"]}.</td>'
+                    f'<td class="lb-name">{html.escape(str(e["player"]))}</td>'
+                    f'<td>{format_time(e["time_seconds"])}</td></tr>'
                 )
-            body = '<div class="lb-scroll">' + "".join(rows) + "</div>"
+            body = "".join(rows)
 
-        st.markdown(header + body, unsafe_allow_html=True)
+        st.html(table_start + body + "</tbody></table>")
