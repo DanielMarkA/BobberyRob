@@ -3,62 +3,74 @@ import html
 import streamlit as st
 
 from ui.components import header
-from ui.components.image_slot import image_slot
 from ui.data_provider import get_mission_briefing, start_mission
 from ui.navigation import go_to, reset_mission_state, GAMEPLAY, MAIN_MENU
 
 
-def _item(number: str, label: str, body_html: str) -> str:
+def _item(icon: str, label: str, body_html: str) -> str:
     return (
-        '<div class="brief-item">'
-        f'<div class="brief-num">{number}</div>'
-        f'<div><div class="brief-label">{label}</div>'
-        f'<div class="brief-text">{body_html}</div></div>'
-        "</div>"
+        '<section class="brief-item">'
+        f'<span class="brief-icon brief-icon-{icon}" aria-hidden="true"></span>'
+        f'<div><h2 class="brief-label">{label}</h2>{body_html}</div>'
+        "</section>"
     )
 
 
-def render() -> None:
-    header.render()
-
+def _start_action() -> None:
+    if not st.button("Start mission", type="primary", width="stretch", key="start_mission"):
+        return
     try:
-        mission = get_mission_briefing()
+        result = start_mission()
     except Exception:
-        st.error("Could not load the mission briefing. Please try again.")
-        st.button("Back to main menu", on_click=go_to, args=(MAIN_MENU,))
+        st.error("Could not start the mission. Please try again.")
+        return
+    if not result["ok"]:
+        st.error(result["error"])
         return
 
-    esc = html.escape
-    optional = "".join(f"<li>{esc(o)}</li>" for o in mission["optional_objectives"])
+    reset_mission_state()
+    go_to(GAMEPLAY)
+    st.rerun()
 
-    col_img, col_text = st.columns([722, 766], gap="large")
 
-    with col_img:
-        image_slot("Mission location image", mission["location_name"])
+def render() -> None:
+    header.render(context="Mission Briefing")
+    with st.container(key="mission_briefing"):
+        try:
+            mission = get_mission_briefing()
+        except Exception:
+            st.error("Could not load the mission briefing. Please try again.")
+            st.button("Back to main menu", on_click=go_to, args=(MAIN_MENU,))
+            return
 
-    with col_text:
-        st.markdown(
-            '<div class="brief-eyebrow">Mission Briefing</div>'
-            f'<div class="brief-title">{esc(mission["title"])}</div>'
-            f'<div class="brief-summary">{esc(mission["summary"])}</div>'
-            + _item("01", "Primary Objective", esc(mission["primary_objective"]))
-            + _item("02", "Optional Objectives", f"<ul>{optional}</ul>")
-            + _item("03", "Mission Information", esc(mission["information"])),
-            unsafe_allow_html=True,
-        )
+        esc = html.escape
+        location = esc(mission["location_name"])
+        optional = "".join(f"<li>{esc(objective)}</li>" for objective in mission["optional_objectives"])
+        art, text = st.columns(2)
+        with art:
+            image = mission["location_image"]
+            if image:
+                st.html(
+                    '<figure class="brief-art">'
+                    f'<img src="{esc(image)}" alt="Exterior of {location}">'
+                    '</figure>'
+                )
+            else:
+                st.html(
+                    '<figure class="brief-art brief-art-empty">'
+                    f'<figcaption>{location}</figcaption></figure>'
+                )
 
-    with st.container(key="start_action"):
-        _, col_btn, _ = st.columns([1, 1.2, 1])
-        with col_btn:
-            if st.button("START MISSION  →", type="primary", width="stretch", key="start_mission"):
-                try:
-                    result = start_mission()
-                except Exception:
-                    st.error("Could not start the mission. Please try again.")
-                    return
-                if result["ok"]:
-                    reset_mission_state()
-                    go_to(GAMEPLAY)
-                    st.rerun()
-                else:
-                    st.error(result["error"])
+        with text, st.container(key="brief_details"):
+            st.html(
+                '<article class="brief-dossier" aria-label="Mission briefing">'
+                '<div class="brief-intro">'
+                f'<h1 class="brief-title">{esc(mission["title"])}</h1>'
+                f'<p class="brief-summary">{esc(mission["summary"])}</p></div>'
+                '<div class="brief-objectives">'
+                + _item("primary", "Primary Objective", f'<p>{esc(mission["primary_objective"])}</p>')
+                + _item("optional", "Optional Objectives", f'<ul>{optional}</ul>')
+                + _item("alert", "Security Alert", f'<p>{esc(mission["information"])}</p>')
+                + '</div></article>'
+            )
+            _start_action()

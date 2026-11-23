@@ -369,12 +369,206 @@ header[data-testid="stHeader"],
 
 
 /* =============================================================================
-   5. LEGACY STYLES (the old look)
+   5. MISSION BRIEFING
+   ============================================================================= */
+.stApp:has(.st-key-mission_briefing) {
+  --header-h: clamp(3.625rem, 11.5dvh, 7rem);
+  --brief-step: clamp(0.65rem, min(1.72dvh, 1.55vw), 1.125rem);
+  --brief-gutter-y: clamp(1rem, 3.4dvh, 2.75rem);
+  --brief-gutter-x: clamp(1rem, 3.8vw, 4.25rem);
+  --brief-art-height: min(48vw, 47rem, calc(100dvh - var(--header-h) - 2 * var(--brief-gutter-y)));
+  --brief-intro-inset: calc(3.25 * var(--brief-step));
+  --brief-item-gap: calc(2.8 * var(--brief-step));
+  --brief-gold: #e4c375;
+  background: radial-gradient(ellipse at 72% 43%, #131109, var(--bg) 73%);
+}
+.stApp:has(.st-key-mission_briefing) .block-container {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100dvh;
+  max-inline-size: clamp(56rem, calc(2.15 * var(--brief-art-height)), 102rem);
+  padding: calc(var(--header-h) + var(--brief-gutter-y)) var(--brief-gutter-x) var(--brief-gutter-y);
+}
+.stApp:has(.st-key-mission_briefing) .block-container > [data-testid="stVerticalBlock"] {
+  flex: 1 0 auto;
+  justify-content: center;
+  gap: 0;
+}
+.app-header-context {
+  margin-inline-start: auto;
+  color: var(--brief-gold, var(--gold-hi));
+  font: 700 clamp(0.6875rem, 1vw, 0.9rem) / 1.3 var(--font-display);
+  letter-spacing: 0.095em;
+  text-transform: uppercase;
+}
+
+.st-key-mission_briefing [data-testid="stHorizontalBlock"] {
+  display: grid;
+  grid-template-columns: minmax(0, 0.465fr) minmax(0, 0.535fr);
+  gap: clamp(1.25rem, 4.25vw, 4.5rem);
+}
+.st-key-mission_briefing [data-testid="stColumn"] {
+  display: flex;
+  inline-size: auto;
+  min-inline-size: 0;
+}
+.st-key-mission_briefing [data-testid="stColumn"] > [data-testid="stVerticalBlock"],
+.st-key-mission_briefing [data-testid="stColumn"] > [data-testid="stVerticalBlock"] > [data-testid="stLayoutWrapper"],
+.st-key-brief_details { flex: 1; }
+.st-key-mission_briefing [data-testid="stElementContainer"]:has(.brief-art),
+.st-key-mission_briefing [data-testid="stHtml"]:has(.brief-art) {
+  display: flex;
+  flex: 1;
+}
+
+.brief-art {
+  position: relative;
+  flex: 1;
+  margin: 0;
+  min-block-size: var(--brief-art-height);
+  border: 1px solid #9f8149;
+  background: var(--panel);
+}
+.brief-art img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.brief-art-empty {
+  display: grid;
+  place-content: center;
+  color: var(--cream);
+  font-family: var(--font-display);
+  text-align: center;
+}
+
+.st-key-brief_details {
+  justify-content: space-between;
+  gap: calc(1.6 * var(--brief-step));
+}
+.brief-dossier {
+  font-family: var(--font-display);
+  font-size: clamp(0.875rem, calc(1.1 * var(--brief-step)), 1.125rem);
+  line-height: 1.55;
+}
+.brief-intro {
+  padding-block: var(--brief-intro-inset) calc(1.75 * var(--brief-step));
+  border-block-end: 1px solid var(--line);
+}
+.brief-dossier h1.brief-title {
+  margin: 0 0 calc(1.05 * var(--brief-step));
+  padding: 0;
+  color: var(--text);
+  font: 400 clamp(1.5rem, min(3.2vw, calc(2.85 * var(--brief-step))), 3rem) / 1.2 var(--font-display);
+  text-wrap: balance;
+}
+.brief-dossier p,
+.brief-dossier ul {
+  margin: 0;
+  color: var(--text);
+  font: inherit;
+}
+.brief-summary { max-inline-size: 49ch; }
+.brief-objectives {
+  display: grid;
+  gap: var(--brief-item-gap);
+  padding-block-start: calc(1.75 * var(--brief-step));
+}
+.brief-item {
+  display: grid;
+  grid-template-columns: calc(1.55 * var(--brief-step)) minmax(0, 1fr);
+  align-items: start;
+  gap: calc(0.95 * var(--brief-step));
+}
+.brief-icon {
+  inline-size: 100%;
+  aspect-ratio: 1;
+  margin-block-start: 0.08em;
+  background: var(--brief-gold);
+  mask: var(--brief-icon) center / contain no-repeat;
+}
+.brief-icon-primary { --brief-icon: url("/app/static/icons/target.svg"); }
+.brief-icon-optional { --brief-icon: url("/app/static/icons/circle-check.svg"); }
+.brief-icon-alert { --brief-icon: url("/app/static/icons/shield-exclamation-point.svg"); }
+.brief-item h2.brief-label {
+  margin: 0 0 calc(0.24 * var(--brief-step));
+  padding: 0;
+  color: var(--brief-gold);
+  font: 700 clamp(0.72rem, calc(0.94 * var(--brief-step)), 1.02rem) / 1.3 var(--font-display);
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+.brief-item ul { padding-inline-start: 1.05em; }
+.brief-item li { font: inherit; }
+
+.st-key-mission_briefing .st-key-start_mission button {
+  min-block-size: 2.75rem;
+  height: calc(4.3 * var(--brief-step));
+  border: 1px solid #b9954f;
+  border-radius: 0.15rem;
+  background: linear-gradient(180deg, #52391b, #24190d 47%, #110e07);
+  box-shadow: inset 0 0 0 2px #d2a96140, inset 0 2px 4px #f4d19045;
+}
+.st-key-mission_briefing .st-key-start_mission button p {
+  display: flex;
+  align-items: center;
+  gap: 0.55em;
+  color: var(--brief-gold);
+  font: 700 clamp(0.875rem, calc(1.1 * var(--brief-step)), 1.2rem) / 1.2 var(--font-display);
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+.st-key-start_mission button p::after {
+  content: "";
+  inline-size: 0.95em;
+  block-size: 0.65em;
+  background: currentColor;
+  clip-path: polygon(0 42%, 78% 42%, 52% 12%, 61% 0, 100% 50%, 61% 100%, 52% 88%, 78% 58%, 0 58%);
+}
+.st-key-mission_briefing .st-key-start_mission button:hover {
+  background: linear-gradient(180deg, #684923, #382612 52%, #181207);
+}
+.st-key-mission_briefing .st-key-start_mission button:focus-visible {
+  outline: 2px solid var(--gold-hi);
+  outline-offset: 3px;
+}
+.st-key-mission_briefing ::selection { background: var(--gold-hi); color: var(--ink); }
+
+@media (max-height: 640px) {
+  .stApp:has(.st-key-mission_briefing) {
+    --brief-intro-inset: calc(0.45 * var(--brief-step));
+    --brief-item-gap: calc(1.25 * var(--brief-step));
+  }
+}
+@media (max-width: 760px) {
+  .stApp:has(.st-key-mission_briefing) {
+    --header-h: 3.625rem;
+    --brief-step: 0.9rem;
+    --brief-gutter-y: 1.25rem;
+    --brief-art-height: clamp(10rem, 47vw, 19rem);
+    --brief-intro-inset: 0px;
+    --brief-item-gap: calc(1.3 * var(--brief-step));
+  }
+  .stApp:has(.st-key-mission_briefing) .block-container { max-inline-size: 38rem; }
+  .st-key-mission_briefing [data-testid="stHorizontalBlock"] { grid-template-columns: minmax(0, 1fr); }
+  .brief-dossier h1.brief-title { font-size: clamp(1.5rem, 5.8vw, 2.5rem); }
+  .brief-art img { object-position: center 63%; }
+}
+@media (max-width: 360px) {
+  .app-header-context { display: none; }
+}
+
+/* =============================================================================
+   6. LEGACY STYLES (the old look)
    Left untouched until each screen is rebuilt to the Figma design. Delete each
    block once its screen has been replaced.
    ============================================================================= */
 
-/* ---------- 5.1 Shared: image placeholder and cards ---------- */
+/* ---------- 6.1 Shared: image placeholder and cards ---------- */
 .img-slot {
   width: 100%; display: flex; flex-direction: column;
   align-items: center; justify-content: center; text-align: center;
@@ -395,29 +589,7 @@ div[class*="st-key-card_"] {
 .card-sub { font-weight: 500; margin-bottom: 0.9rem; }
 .card-text { color: #CFCABF; line-height: 1.55; }
 
-/* ---------- 5.2 Mission briefing (Milestone 3) ---------- */
-.brief-eyebrow {
-  color: var(--muted); font-size: 0.8rem; font-weight: 600;
-  letter-spacing: 0.22em; text-transform: uppercase;
-}
-.brief-title { font-size: 2.7rem; font-weight: 700; line-height: 1.15; margin: 0.5rem 0 1rem; }
-.brief-summary {
-  font-size: 1.1rem; line-height: 1.6; color: #CFCABF;
-  padding-bottom: 1.5rem; margin-bottom: 1.75rem; border-bottom: 1px solid var(--line);
-}
-.brief-item { display: flex; gap: 1.25rem; margin-bottom: 1.5rem; }
-.brief-num {
-  flex: 0 0 44px; height: 44px; display: flex; align-items: center; justify-content: center;
-  border: 1px solid var(--gold); border-radius: 6px; background: rgba(200, 162, 74, 0.08);
-  color: var(--gold); font-weight: 600;
-}
-.brief-label { font-weight: 700; font-size: 0.95rem; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.25rem; }
-.brief-text { color: #CFCABF; line-height: 1.55; }
-.brief-text ul { margin: 0.25rem 0 0; padding-left: 1.1rem; }
-
-.st-key-start_action { margin-top: 1.5rem; }
-
-/* ---------- 5.3 Gameplay (Milestone 4) ---------- */
+/* ---------- 6.2 Gameplay (Milestone 4) ---------- */
 /* Mission briefing card: collapsible, no inner border */
 div[class*="st-key-card_briefing"] [data-testid="stExpander"] { border: none; }
 div[class*="st-key-card_briefing"] [data-testid="stExpander"] summary {
@@ -491,7 +663,7 @@ div[class*="st-key-item_"] button {
 }
 div[class*="st-key-item_"] button p { text-align: left; }
 
-/* ---------- 5.4 Results (Milestone 5) ---------- */
+/* ---------- 6.3 Results (Milestone 5) ---------- */
 .result-scene {
   position: relative; width: 100%; aspect-ratio: 1; overflow: hidden;
   background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;

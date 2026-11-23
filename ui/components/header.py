@@ -1,7 +1,8 @@
+from html import escape
+
 import streamlit as st
 
-# Runs after the global CSS, so these rules win on screens that show the header.
-# Content starts below the fixed header (Figma: gameplay content begins ~36px under it).
+# Default spacing for screens with the fixed header.
 _SCREEN_CSS = """
 .block-container {
   max-width: 1672px;
@@ -12,13 +13,15 @@ _SCREEN_CSS = """
 """
 
 # HTML for st.markdown must stay on one line without indentation.
-_HEADER_HTML = (
-    '<div class="app-header">'
+_HEADER_BRAND = (
     '<img class="app-header-emblem" src="/app/static/brand/emblem.webp" alt="">'
     '<span class="app-header-title">Bobbery Rob</span>'
-    "</div>"
 )
 
 
-def render() -> None:
-    st.markdown(f"<style>{_SCREEN_CSS}</style>{_HEADER_HTML}", unsafe_allow_html=True)
+def render(*, context: str | None = None) -> None:
+    label = f'<span class="app-header-context">{escape(context)}</span>' if context else ""
+    st.markdown(
+        f'<style>{_SCREEN_CSS}</style><div class="app-header">{_HEADER_BRAND}{label}</div>',
+        unsafe_allow_html=True,
+    )

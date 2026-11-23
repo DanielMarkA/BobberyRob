@@ -129,26 +129,19 @@ def get_mission_briefing() -> dict:
     """Return the mission configuration shown on the briefing screen.
 
     PHASE 6: replace with the real call (data comes from scenarios/museum.json).
-    "location_image" is None until artwork exists.
+    "location_image" can be None when a scenario has no artwork.
     """
     return {
         "title": "The Forgotten Artifact",
-        "summary": (
-            "A priceless artifact has reportedly gone missing from the museum's "
-            "restricted collection. Your task is to reach the restricted area "
-            "and uncover what really happened."
-        ),
-        "location_name": "The National Museum",
-        "location_image": None,
-        "primary_objective": "Gain access to the Restricted Collection Area.",
+        "summary": "A priceless artifact has vanished from the museum's restricted collection.",
+        "location_name": "Grand Museum",
+        "location_image": "/app/static/images/museum_entrance.webp",
+        "primary_objective": "Enter the restricted collection.",
         "optional_objectives": [
-            "Discover the truth about the missing artifact.",
-            "Avoid raising suspicion.",
+            "Discover what happened.",
+            "Keep suspicion low.",
         ],
-        "information": (
-            "The museum is under heightened security due to the incident. "
-            "Guards will be more alert than usual."
-        ),
+        "information": "Guards are on high alert.",
     }
 
 def start_mission() -> dict:
