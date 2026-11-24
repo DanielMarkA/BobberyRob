@@ -19,9 +19,11 @@ def render(game: dict) -> None:
     )
     st.html(
         '<section class="checkpoint-card checkpoint-location">'
-        '<h2 class="checkpoint-heading checkpoint-icon-location">Current Location</h2>'
-        f'<p>{esc(location["name"])}</p>{thumbnail}'
-        '</section>'
+        '<div class="checkpoint-card-head">'
+        '<h2 class="checkpoint-heading checkpoint-icon-location">Location</h2>'
+        "</div>"
+        f'<p class="checkpoint-location-name">{esc(location["name"])}</p>{thumbnail}'
+        "</section>"
     )
 
     objectives.render(game["objectives"])

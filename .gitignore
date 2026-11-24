@@ -6,4 +6,5 @@ __pycache__/
 .streamlit/secrets.toml
 .impeccable/
 PRODUCT.md
+DESIGN.md
 .DS_Store

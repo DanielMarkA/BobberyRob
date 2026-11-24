@@ -28,25 +28,32 @@ def _submit() -> None:
 def render() -> None:
     with st.container(key="entry_panel"):
         st.html(
+            '<div class="entry-head">'
+            '<div class="entry-emblem-wrap">'
+            '<div class="entry-aperture-ring" aria-hidden="true"></div>'
             '<img class="entry-emblem" src="/app/static/brand/emblem.webp" alt="">'
+            "</div>"
             '<h1 class="entry-title">Bobbery Rob</h1>'
-            '<div class="entry-tagline">Your identity is your greatest weapon.</div>'
-            '<div class="entry-rule"></div>'
+            '<p class="entry-tagline">Your identity is your greatest weapon.</p>'
+            "</div>"
+            '<div class="entry-rule" aria-hidden="true"></div>'
         )
 
         error = st.session_state.get("entry_error")
 
-        # A form lets the Enter key submit, same as clicking the button.
         with st.form("entry_form", clear_on_submit=False):
             st.text_input(
                 "Codename",
                 key="codename_input",
-                max_chars=32,  # generic safety cap only, real rules come from the backend
+                max_chars=32,
+                placeholder=" ",
             )
-            if error:
-                st.html(
-                    f'<div class="field-error" role="alert">{html.escape(str(error))}</div>'
-                )
+            error_html = (
+                f'<div class="field-error" role="alert">{html.escape(str(error))}</div>'
+                if error
+                else ""
+            )
+            st.html(f'<div class="field-error-slot" aria-live="polite">{error_html}</div>')
             st.form_submit_button(
                 "Enter game", type="primary", width="stretch", on_click=_submit
             )

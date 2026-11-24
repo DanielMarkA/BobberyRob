@@ -37,13 +37,20 @@ def render(items: list[dict]) -> None:
         selected = st.session_state["selected_item"] = None
 
     with st.container(key="checkpoint_inventory"):
-        st.html('<h2 class="checkpoint-heading checkpoint-icon-inventory">Inventory</h2>')
+        st.html(
+            '<div class="checkpoint-card-head">'
+            '<h2 class="checkpoint-heading checkpoint-icon-inventory">Inventory</h2>'
+            "</div>"
+        )
 
         if not items:
-            st.html('<p>Your inventory is empty.</p>')
+            st.html('<p class="inv-hint">Your inventory is empty.</p>')
             return
 
+        selected_name = None
         for item in items:
+            if item["id"] == selected:
+                selected_name = item["name"]
             image = f'![]({item["image"]}) ' if item.get("image") else ""
             st.button(
                 f'{image}{item["name"]} `×{item["quantity"]}`',
@@ -55,5 +62,13 @@ def render(items: list[dict]) -> None:
                 width="stretch",
             )
 
-        if selected is not None:
-            st.button("Use item", key="use_item", on_click=_queue_use)
+        if selected is not None and selected_name:
+            st.button(
+                f"Present {selected_name}",
+                key="use_item",
+                type="primary",
+                on_click=_queue_use,
+                width="stretch",
+            )
+        else:
+            st.html('<p class="inv-hint">Select an item to present it.</p>')

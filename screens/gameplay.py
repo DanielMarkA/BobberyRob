@@ -15,6 +15,7 @@ def _load_state() -> dict:
         st.session_state["game"] = get_game_state()
     return st.session_state["game"]
 
+
 def _end_mission(ending: str) -> None:
     """TEMPORARY dev shortcut. The real ending will come from the backend."""
     st.session_state["_mock_ending"] = ending
@@ -22,7 +23,7 @@ def _end_mission(ending: str) -> None:
 
 
 def render() -> None:
-    header.render()
+    header.render(context="Active Checkpoint")
 
     with st.container(key="checkpoint"):
         try:
@@ -37,7 +38,8 @@ def render() -> None:
         inventory.process_pending()
         game = st.session_state["game"]
 
-        # The conversation and controls come first in mobile and keyboard order.
+        # Conversation comes first in DOM for mobile and keyboard order;
+        # desktop CSS maps columns to Left: Mission | Center: Scenes | Right: Status.
         conversation, status, mission = st.columns(3)
         with conversation, st.container(key="checkpoint_conversation"):
             dialogue_panel.render(game)
@@ -51,6 +53,7 @@ def render() -> None:
             mission_panel.render(game)
 
     if os.getenv("BOBBERY_DEV_SHORTCUTS") == "1":
-        with st.expander("Developer shortcuts"):
-            for ending in ("success", "compromised", "captured"):
-                st.button(f"End: {ending}", on_click=_end_mission, args=(ending,))
+        with st.container(key="dev_shortcuts"):
+            with st.expander("Dev shortcuts"):
+                for ending in ("success", "compromised", "captured"):
+                    st.button(f"End: {ending}", on_click=_end_mission, args=(ending,), width="stretch")
