@@ -15,12 +15,14 @@ def _level(value: float) -> str:
 def render(suspicion: dict) -> None:
     value = max(0, min(100, float(suspicion["value"])))  # clamp for display safety
 
-    with st.container(key="card_suspicion"):
-        st.markdown(
-            '<div class="card-title">Suspicion Level</div>'
-            f'<div class="susp-value">{value:.0f}<span> / 100</span></div>'
-            f'<div class="susp-track"><div class="susp-fill {_level(value)}" '
-            f'style="width:{value}%"></div></div>'
-            f'<div class="susp-label">{html.escape(str(suspicion["label"]))}</div>',
-            unsafe_allow_html=True,
-        )
+    st.html(
+        '<section class="checkpoint-card checkpoint-suspicion">'
+        '<h2 id="checkpoint-suspicion-title" class="checkpoint-heading checkpoint-icon-suspicion">'
+        'Suspicion Level</h2>'
+        f'<div class="susp-value" aria-hidden="true">{value:.0f} / 100</div>'
+        f'<div class="susp-track" role="meter" aria-labelledby="checkpoint-suspicion-title" '
+        f'aria-valuenow="{value:g}" aria-valuemin="0" aria-valuemax="100">'
+        f'<div class="susp-fill {_level(value)}" style="width:{value}%"></div></div>'
+        f'<p class="susp-label">{html.escape(str(suspicion["label"]))}</p>'
+        '</section>'
+    )

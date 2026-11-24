@@ -3,25 +3,25 @@ import html
 import streamlit as st
 
 from ui.components import objectives
-from ui.components.image_slot import image_slot
 
 
 def render(game: dict) -> None:
     esc = html.escape
 
-    with st.container(key="card_briefing"):
+    with st.container(key="checkpoint_brief"):
         with st.expander("Mission Briefing", expanded=True):
-            st.markdown(
-                f'<div class="card-text">{esc(game["mission_summary"])}</div>',
-                unsafe_allow_html=True,
-            )
+            st.html(f'<p class="checkpoint-brief-text">{esc(game["mission_summary"])}</p>')
 
-    with st.container(key="card_location"):
-        st.markdown(
-            '<div class="card-title">Current Location</div>'
-            f'<div class="card-sub">{esc(game["location"]["name"])}</div>',
-            unsafe_allow_html=True,
-        )
-        image_slot("Location image", ratio="340 / 159")
+    location = game["location"]
+    thumbnail = (
+        f'<div class="checkpoint-thumbnail"><img src="{esc(location["image"])}" alt=""></div>'
+        if location.get("image") else ""
+    )
+    st.html(
+        '<section class="checkpoint-card checkpoint-location">'
+        '<h2 class="checkpoint-heading checkpoint-icon-location">Current Location</h2>'
+        f'<p>{esc(location["name"])}</p>{thumbnail}'
+        '</section>'
+    )
 
     objectives.render(game["objectives"])

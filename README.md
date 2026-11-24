@@ -15,6 +15,10 @@ python -m streamlit run app.py
 
 Open the local URL printed by Streamlit.
 
+To test the results screens before the full game flow is wired up, launch with
+`$env:BOBBERY_DEV_SHORTCUTS = "1"` in the environment. This adds a Developer shortcuts
+section to gameplay; it is hidden by default.
+
 ## Museum MVP
 
 - **Free-form dialogue:** Create a fictional identity through conversation and interact with at least two distinct guard personalities.

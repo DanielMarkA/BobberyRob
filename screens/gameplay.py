@@ -1,8 +1,9 @@
+import os
+
 import streamlit as st
 
 from ui.components import (
-    dialogue_panel, header, inventory, mission_panel,
-    security_notices, suspicion_meter,
+    dialogue_panel, game_timer, header, inventory, mission_panel, suspicion_meter,
 )
 from ui.data_provider import get_game_state
 from ui.navigation import go_to, MAIN_MENU, RESULTS
@@ -19,37 +20,37 @@ def _end_mission(ending: str) -> None:
     st.session_state["_mock_ending"] = ending
     go_to(RESULTS)
 
+
 def render() -> None:
     header.render()
 
-    try:
-        _load_state()
-    except Exception:
-        st.error("Could not load the game. Please try again.")
-        st.button("Back to main menu", on_click=go_to, args=(MAIN_MENU,))
-        return
+    with st.container(key="checkpoint"):
+        try:
+            _load_state()
+        except Exception:
+            st.error("Could not load the game. Please try again.")
+            st.button("Back to main menu", on_click=go_to, args=(MAIN_MENU,))
+            return
 
-    # Send any queued response to the backend FIRST, so all panels show new state.
-    dialogue_panel.process_pending()
-    inventory.process_pending()
-    game = st.session_state["game"]
+        # Send queued actions before drawing, so every panel sees the new state.
+        dialogue_panel.process_pending()
+        inventory.process_pending()
+        game = st.session_state["game"]
 
-    col_left, col_center, col_right = st.columns([342, 914, 343], gap="medium")
+        # The conversation and controls come first in mobile and keyboard order.
+        conversation, status, mission = st.columns(3)
+        with conversation, st.container(key="checkpoint_conversation"):
+            dialogue_panel.render(game)
 
-    with col_left:
-        mission_panel.render(game)
+        with status, st.container(key="checkpoint_status"):
+            suspicion_meter.render(game["suspicion"])
+            inventory.render(game["inventory"])
+            game_timer.render()
 
-    with col_center:
-        dialogue_panel.render(game)
+        with mission, st.container(key="checkpoint_mission"):
+            mission_panel.render(game)
 
-    with col_right:
-        suspicion_meter.render(game["suspicion"])
-        inventory.render(game["inventory"])
-        security_notices.render(game["notice"])
-
-    # Temporary dev shortcuts, removed once the real ending flow exists
-    st.caption("Dev shortcuts (temporary)")
-    c1, c2, c3, _ = st.columns([1, 1, 1, 3])
-    c1.button("End: success", on_click=_end_mission, args=("success",))
-    c2.button("End: compromised", on_click=_end_mission, args=("compromised",))
-    c3.button("End: captured", on_click=_end_mission, args=("captured",))
+    if os.getenv("BOBBERY_DEV_SHORTCUTS") == "1":
+        with st.expander("Developer shortcuts"):
+            for ending in ("success", "compromised", "captured"):
+                st.button(f"End: {ending}", on_click=_end_mission, args=(ending,))

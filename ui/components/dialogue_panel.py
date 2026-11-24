@@ -37,30 +37,39 @@ def process_pending() -> None:
 def render(game: dict) -> None:
     esc = html.escape
     dialogue = game["dialogue"]
+    scene = game.get("scene", {})
+    artwork = "".join(
+        f'<img class="checkpoint-{kind}" src="{esc(scene[kind])}" alt="">'
+        for kind in ("background", "portrait")
+        if scene.get(kind)
+    )
 
-    with st.container(key="card_scene"):
-        st.markdown(
-            '<div class="scene">'
-            '<div class="scene-art">'
-            '<div class="img-slot-label">Security guard / museum scene</div>'
-            '<div class="img-slot-caption">Scene artwork placeholder</div>'
-            "</div>"
-            '<div class="dialogue-wrap">'
-            f'<div class="speaker">{esc(dialogue["speaker"])}</div>'
-            f'<div class="dialogue-text">{esc(dialogue["text"])}</div>'
-            "</div>"
-            "</div>",
-            unsafe_allow_html=True,
+    feedback = "".join(
+        f'<p class="checkpoint-feedback{modifier}" role="{role}">{esc(message)}</p>'
+        for message, modifier, role in (
+            (st.session_state.get("send_error"), " error", "alert"),
+            (st.session_state.get("item_error"), " error", "alert"),
+            (game.get("notice"), "", "status"),
         )
+        if message
+    )
+    st.html(
+        '<section class="checkpoint-scene">'
+        '<h1 class="checkpoint-sr">Security checkpoint</h1>'
+        f'{artwork}<div class="checkpoint-dialogue">'
+        f'<h2 class="checkpoint-speaker">{esc(dialogue["speaker"])}</h2>'
+        '<div class="checkpoint-reply" tabindex="0" role="region" aria-label="Guard dialogue">'
+        f'<p>{esc(dialogue["text"])}</p>{feedback}</div></div></section>'
+    )
 
     with st.container(key="response_bar"):
         with st.form("response_form", border=False):
-            col_input, col_send = st.columns([764, 112], gap="small")
+            col_input, col_send = st.columns(2, gap="small")
             with col_input:
                 st.text_area(
                     "Your response",
                     key="response_text",
-                    height=96,
+                    height=68,
                     max_chars=MAX_RESPONSE_CHARS,
                     placeholder="Type your response here...",
                     label_visibility="collapsed",
@@ -69,6 +78,3 @@ def render(game: dict) -> None:
                 st.form_submit_button(
                     "Send", type="primary", on_click=_queue_send, width="stretch"
                 )
-
-        if "send_error" in st.session_state:
-            st.error(st.session_state["send_error"])

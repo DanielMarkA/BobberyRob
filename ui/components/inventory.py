@@ -1,5 +1,3 @@
-import html
-
 import streamlit as st
 
 from ui.data_provider import use_item
@@ -38,42 +36,24 @@ def render(items: list[dict]) -> None:
     if selected not in usable_ids:
         selected = st.session_state["selected_item"] = None
 
-    with st.container(key="card_inventory"):
-        st.markdown('<div class="card-title">Inventory</div>', unsafe_allow_html=True)
+    with st.container(key="checkpoint_inventory"):
+        st.html('<h2 class="checkpoint-heading checkpoint-icon-inventory">Inventory</h2>')
 
         if not items:
-            st.markdown('<div class="card-text">Your inventory is empty.</div>',
-                        unsafe_allow_html=True)
+            st.html('<p>Your inventory is empty.</p>')
             return
 
         for item in items:
-            # The key changes when selected, so CSS can style the selected row.
-            row_key = f"item_sel_{item['id']}" if item["id"] == selected else f"item_{item['id']}"
-            with st.container(key=row_key):
-                col_icon, col_btn = st.columns([1, 4], gap="small", vertical_alignment="center")
-                with col_icon:
-                    st.markdown(
-                        f'<div class="item-icon">{html.escape(str(item["icon"]))}</div>',
-                        unsafe_allow_html=True,
-                    )
-                with col_btn:
-                    st.button(
-                        f'{item["name"]}   ×{item["quantity"]}',
-                        key=f"pick_{item['id']}",
-                        on_click=_select,
-                        args=(item["id"],),
-                        disabled=item["quantity"] <= 0,
-                        width="stretch",
-                    )
+            image = f'![]({item["image"]}) ' if item.get("image") else ""
+            st.button(
+                f'{image}{item["name"]} `×{item["quantity"]}`',
+                key=f"pick_{item['id']}",
+                type="primary" if item["id"] == selected else "secondary",
+                on_click=_select,
+                args=(item["id"],),
+                disabled=item["quantity"] <= 0,
+                width="stretch",
+            )
 
-        st.button(
-            "Use item",
-            key="use_item",
-            type="primary",
-            on_click=_queue_use,
-            disabled=selected is None,
-            width="stretch",
-        )
-
-        if "item_error" in st.session_state:
-            st.error(st.session_state["item_error"])
+        if selected is not None:
+            st.button("Use item", key="use_item", on_click=_queue_use)

@@ -150,7 +150,16 @@ def start_mission() -> dict:
     Returns: {"ok": bool, "error": str | None}
     PHASE 6: the backend creates the run and starts the clock here.
     """
+    st.session_state["_mock_mission_started_at"] = time.monotonic()
     return {"ok": True, "error": None}
+
+
+def get_mission_elapsed_seconds() -> int:
+    """Return the running mission's elapsed time, without rerunning the game."""
+    now = time.monotonic()
+    started_at = st.session_state.setdefault("_mock_mission_started_at", now)
+    return max(0, int(now - started_at))
+
 
 def get_game_state() -> dict:
     """Return the full current game state for the gameplay screen.
@@ -163,16 +172,22 @@ def get_game_state() -> dict:
 
     return {
         "mission_summary": (
-            "A rare artifact is being moved into a restricted collection area. "
-            "Your objective is to reach the restricted area and retrieve the artifact."
+            "An artifact has vanished from the restricted collection. Find out what happened."
         ),
-        "location": {"name": "Main Exhibition Hall", "image": None},
+        "location": {
+            "name": "Main Exhibition Hall",
+            "image": "/app/static/images/main_exhibition_hall_thumb.webp",
+        },
+        "scene": {
+            "background": "/app/static/images/main_exhibition_hall.webp",
+            "portrait": "/app/static/images/casual.webp",
+        },
         "objectives": [
-            {"text": "Enter the Museum", "done": True},
-            {"text": "Reach the Main Hall", "done": False},
-            {"text": "Pass the Security Checkpoint", "done": False},
-            {"text": "Reach the Restricted Area", "done": False},
-            {"text": "Retrieve the Artifact", "done": False},
+            {"text": "Enter the museum", "done": True},
+            {"text": "Reach the main hall", "done": False},
+            {"text": "Pass security", "done": False},
+            {"text": "Enter the restricted area", "done": False},
+            {"text": "Investigate the artifact", "done": False},
         ],
         "dialogue": {
             "speaker": "Security Guard",
@@ -180,11 +195,14 @@ def get_game_state() -> dict:
         },
         "suspicion": {"value": 35, "label": "Moderate Attention"},
         "inventory": [
-            {"id": "fake_passport", "name": "Fake Passport", "quantity": 1, "icon": "PASS"},
-            {"id": "bribe_money", "name": "Bribe Money", "quantity": 3, "icon": "CASH"},
-            {"id": "invitation_letter", "name": "Invitation Letter", "quantity": 1, "icon": "LETTER"},
+            {"id": "fake_passport", "name": "Fake Passport", "quantity": 1,
+             "image": "/app/static/inventory/fake_passport.png"},
+            {"id": "bribe_money", "name": "Bribe Money", "quantity": 3,
+             "image": "/app/static/inventory/bribe_money.png"},
+            {"id": "invitation_letter", "name": "Invitation Letter", "quantity": 1,
+             "image": "/app/static/inventory/invitation_letter.png"},
         ],
-        "notice": "Maintain your composure. Inconsistent statements may raise suspicion.",
+        "notice": None,
     }
 
 def submit_response(text: str) -> dict:
@@ -206,6 +224,7 @@ def submit_response(text: str) -> dict:
 
     game["dialogue"]["text"] = reply
     game["suspicion"] = {"value": value, "label": label}
+    game["notice"] = None
     return game
 
 def use_item(item_id: str) -> dict:
