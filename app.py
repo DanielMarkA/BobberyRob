@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import streamlit as st
 
 from screens import main_menu, mission_briefing, gameplay, results
@@ -6,7 +8,7 @@ from ui.styles import inject_global_styles
 
 st.set_page_config(
     page_title="Bobbery Rob",
-    page_icon="🕵️",
+    page_icon="static/brand/emblem.webp",
     layout="wide",
 )
 

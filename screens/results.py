@@ -8,11 +8,12 @@ from ui.formatting import format_penalty, format_time_precise
 from ui.navigation import go_to, MAIN_MENU, MISSION_BRIEFING
 
 
-def _row(label: str, value: str, icon: str) -> str:
+def _row(label: str, value: str, icon: str, modifier: str = "") -> str:
+    cls = f"result-row {modifier}".strip()
     return (
-        '<div class="result-row">'
+        f'<div class="{cls}">'
         f'<dt class="result-icon-{icon}">{html.escape(label)}</dt>'
-        f'<dd>{html.escape(value)}</dd>'
+        f"<dd>{html.escape(value)}</dd>"
         "</div>"
     )
 
@@ -24,20 +25,23 @@ def _time(seconds) -> str:
 def _summary(result: dict, tone: str) -> None:
     esc = html.escape
     penalty_rows = "".join(
-        _row(penalty["label"], format_penalty(penalty["seconds"]), "timer")
+        _row(penalty["label"], format_penalty(penalty["seconds"]), "timer", "penalty")
         for penalty in result["penalties"]
     ) or _row("Penalties", "None", "timer")
-    note = "" if result["adjusted_seconds"] is not None else (
+    is_ranked = result["adjusted_seconds"] is not None
+    note = "" if is_ranked else (
         '<p class="result-note">Failed attempts are not ranked.</p>'
     )
-    record = '<span class="result-record">New Record!</span>' if result["is_new_record"] else ""
+    time_cls = "result-time" if is_ranked else "result-time unranked"
+    record = '<span class="result-record">New Record</span>' if result["is_new_record"] else ""
+    best_cls = "result-best is-record" if result["is_new_record"] else "result-best"
     st.html(
-        '<section class="result-details">'
+        f'<section class="result-details tone-{tone}">'
         f'<h1 class="result-heading">{esc(result["heading"])}</h1>'
         f'<p class="result-banner {tone}">{esc(result["outcome_label"])}</p>'
         '<div class="result-clock">'
         '<p class="result-time-label">Time including penalties</p>'
-        f'<p class="result-time">{_time(result["adjusted_seconds"])}</p>{note}</div>'
+        f'<p class="{time_cls}">{_time(result["adjusted_seconds"])}</p>{note}</div>'
         '<div class="result-breakdown">'
         '<dl class="result-stat-group">'
         + _row("Gameplay time", _time(result["raw_seconds"]), "timer")
@@ -45,11 +49,11 @@ def _summary(result: dict, tone: str) -> None:
         + '</dl><dl class="result-stat-group">'
         + _row("Final Suspicion", f'{result["final_suspicion"]} / 100', "shield")
         + _row("Objectives Completed", f'{result["objectives_done"]} / {result["objectives_total"]}', "target")
-        + '</dl></div>'
-        '<div class="result-best">'
+        + "</dl></div>"
+        f'<div class="{best_cls}">'
         '<span class="result-best-label">Personal best</span>'
         f'<strong class="result-best-time result-icon-trophy">{_time(result["personal_best_seconds"])}</strong>'
-        f'{record}</div></section>'
+        f"{record}</div></section>"
     )
 
 
@@ -57,10 +61,15 @@ def _artwork(result: dict, tone: str) -> None:
     esc = html.escape
     description = esc(result["scene_caption"])
     image = result.get("scene_image")
-    art = f'<img src="{esc(image)}" alt="{description}">' if image else f'<span>{description}</span>'
+    art = f'<img src="{esc(image)}" alt="{description}">' if image else f"<span>{description}</span>"
     st.html(
         f'<figure class="result-scene {tone}">'
-        f'<div class="result-art">{art}</div>'
+        '<div class="result-art">'
+        '<span class="result-corner result-c-tl" aria-hidden="true"></span>'
+        '<span class="result-corner result-c-tr" aria-hidden="true"></span>'
+        '<span class="result-corner result-c-bl" aria-hidden="true"></span>'
+        '<span class="result-corner result-c-br" aria-hidden="true"></span>'
+        f"{art}</div>"
         '<figcaption class="result-attribution">'
         f'<blockquote>“{esc(result["quote"])}”</blockquote>'
         f'<p>— {esc(result["quote_by"])}</p></figcaption></figure>'
@@ -68,7 +77,7 @@ def _artwork(result: dict, tone: str) -> None:
 
 
 def render() -> None:
-    header.render()
+    header.render(context="Mission Debrief")
     with st.container(key="results"):
         try:
             result = get_mission_result()

@@ -10,8 +10,10 @@ def render() -> None:
     minutes, seconds = divmod(remainder, 60)
     st.html(
         '<section class="checkpoint-card checkpoint-timer">'
-        '<h2 class="checkpoint-heading checkpoint-icon-time">Game time</h2>'
+        '<div class="checkpoint-card-head">'
+        '<h2 class="checkpoint-heading checkpoint-icon-time">Elapsed Time</h2>'
+        "</div>"
         f'<time role="timer" aria-label="Elapsed game time" datetime="PT{elapsed}S">'
-        f'{hours:02d}:{minutes:02d}:{seconds:02d}</time>'
-        '</section>'
+        f"{hours:02d}:{minutes:02d}:{seconds:02d}</time>"
+        "</section>"
     )

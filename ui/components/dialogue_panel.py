@@ -56,10 +56,19 @@ def render(game: dict) -> None:
     st.html(
         '<section class="checkpoint-scene">'
         '<h1 class="checkpoint-sr">Security checkpoint</h1>'
-        f'{artwork}<div class="checkpoint-dialogue">'
+        f'{artwork}'
+        '<div class="checkpoint-scrim" aria-hidden="true"></div>'
+        '<div class="checkpoint-dialogue">'
+        '<div class="checkpoint-speaker-bar">'
+        '<div class="checkpoint-speaker-left">'
+        '<span class="checkpoint-live-dot" aria-hidden="true"></span>'
         f'<h2 class="checkpoint-speaker">{esc(dialogue["speaker"])}</h2>'
+        "</div>"
+        '<div class="checkpoint-wave" aria-hidden="true"><span></span><span></span><span></span><span></span></div>'
+        "</div>"
         '<div class="checkpoint-reply" tabindex="0" role="region" aria-label="Guard dialogue">'
-        f'<p>{esc(dialogue["text"])}</p>{feedback}</div></div></section>'
+        f'<p class="checkpoint-utterance">{esc(dialogue["text"])}</p>{feedback}</div>'
+        "</div></section>"
     )
 
     with st.container(key="response_bar"):
@@ -69,9 +78,9 @@ def render(game: dict) -> None:
                 st.text_area(
                     "Your response",
                     key="response_text",
-                    height=68,
+                    height=64,
                     max_chars=MAX_RESPONSE_CHARS,
-                    placeholder="Type your response here...",
+                    placeholder="Answer the guard in your own words...",
                     label_visibility="collapsed",
                 )
             with col_send:
