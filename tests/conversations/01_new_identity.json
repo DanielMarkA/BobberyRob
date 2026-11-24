@@ -1,0 +1,25 @@
+{
+  "test_id": "01_new_identity",
+  "title": "New Identity Registration",
+  "description": "Verifies that player claims are recorded into memory slots without displaying an automatic identity summary.",
+  "location_id": "museum_entrance",
+  "guard_id": "guard_casual",
+  "turns": [
+    {
+      "step": 1,
+      "speaker": "player",
+      "text": "Good evening officer, I'm Dr. Vance, a senior art historian from the University of Oxford.",
+      "expected": {
+        "status": "ok",
+        "claims_extracted": [
+          {"slot": "name", "value": "Dr. Vance", "status": "asserted"},
+          {"slot": "occupation", "value": "art historian", "status": "asserted"},
+          {"slot": "employer", "value": "University of Oxford", "status": "asserted"}
+        ],
+        "identity_summary_displayed": false,
+        "suspicion_delta": 0,
+        "dialogue_contains": "Good evening"
+      }
+    }
+  ]
+}

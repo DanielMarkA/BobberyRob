@@ -1,0 +1,40 @@
+{
+  "test_id": "05_contradiction_across_guards",
+  "title": "Cross-Guard Contradiction Detection",
+  "description": "Verifies that a contradictory statement made to a second guard retrieves earlier statements and triggers suspicion.",
+  "turns": [
+    {
+      "step": 1,
+      "location_id": "museum_entrance",
+      "guard_id": "guard_casual",
+      "speaker": "player",
+      "text": "Good evening, I'm Dr. Vance, an art historian conducting research.",
+      "expected": {
+        "claims_extracted": [
+          {"slot": "occupation", "value": "art historian", "status": "asserted"}
+        ],
+        "suspicion_delta": 0
+      }
+    },
+    {
+      "step": 2,
+      "location_id": "main_hall",
+      "guard_id": "guard_strict",
+      "speaker": "player",
+      "text": "Step aside, officer. I'm the master electrician called in for emergency wiring.",
+      "expected": {
+        "claims_extracted": [
+          {"slot": "occupation", "value": "master electrician", "status": "asserted"}
+        ],
+        "earlier_claim_retrieved": {
+          "slot": "occupation",
+          "value": "art historian",
+          "source_turn": 1
+        },
+        "conflict_detected": true,
+        "suspicion_delta": 25,
+        "guard_reaction": "contradiction_flagged"
+      }
+    }
+  ]
+}

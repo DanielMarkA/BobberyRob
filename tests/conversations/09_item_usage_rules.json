@@ -1,0 +1,48 @@
+{
+  "test_id": "09_item_usage_rules",
+  "title": "Item Usage Validation and Quantity Depletion",
+  "description": "Tests unavailable item rejection, valid item execution, and consumable quantity depletion under zero balance.",
+  "cases": [
+    {
+      "case_name": "use_unavailable_item",
+      "item_id": "access_card",
+      "inventory_quantity": 0,
+      "guard_id": "guard_casual",
+      "location_id": "museum_entrance",
+      "expected": {
+        "success": false,
+        "notice": "You don't have that item.",
+        "quantity_changed": false,
+        "suspicion_delta": 0
+      }
+    },
+    {
+      "case_name": "use_valid_reusable_item",
+      "item_id": "fake_passport",
+      "inventory_quantity": 1,
+      "guard_id": "guard_casual",
+      "location_id": "museum_entrance",
+      "expected": {
+        "success": true,
+        "consumed": false,
+        "quantity_after": 1,
+        "suspicion_delta": -5,
+        "notice": "The receptionist validated your research passport."
+      }
+    },
+    {
+      "case_name": "bribe_with_zero_money",
+      "item_id": "bribe_money",
+      "inventory_quantity": 0,
+      "guard_id": "guard_casual",
+      "location_id": "museum_entrance",
+      "expected": {
+        "success": false,
+        "consumed": false,
+        "quantity_after": 0,
+        "notice": "You don't have enough bribe money.",
+        "suspicion_delta": 0
+      }
+    }
+  ]
+}

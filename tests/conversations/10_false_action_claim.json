@@ -1,0 +1,20 @@
+{
+  "test_id": "10_false_action_claim",
+  "title": "False Action Claim Validation",
+  "description": "Verifies that verbal claims of past actions without backing game state are flagged as unverified claims.",
+  "location_id": "security_checkpoint",
+  "guard_id": "guard_observant",
+  "turns": [
+    {
+      "step": 1,
+      "speaker": "player",
+      "text": "I already showed my invitation letter to Chief Sterling in the restricted wing and he cleared me.",
+      "expected": {
+        "verified_by_engine": false,
+        "flag": "false_action_claim",
+        "suspicion_delta": 15,
+        "guard_response": "Chief Sterling never logged any invitation from you tonight."
+      }
+    }
+  ]
+}
