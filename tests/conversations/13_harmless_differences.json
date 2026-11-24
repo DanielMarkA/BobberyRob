@@ -1,0 +1,42 @@
+{
+  "test_id": "13_harmless_differences",
+  "title": "Harmless Statement Differences (Non-Contradictions)",
+  "description": "Ensures that omitting minor details, making jokes, or posing hypotheticals are NOT flagged as contradictions.",
+  "location_id": "main_hall",
+  "guard_id": "guard_strict",
+  "cases": [
+    {
+      "case_name": "omitted_detail",
+      "initial_claim": {
+        "slot": "occupation",
+        "value": "doctoral researcher specializing in Cynthia dynasty artifacts"
+      },
+      "player_statement": "I am a researcher.",
+      "expected": {
+        "is_contradiction": false,
+        "suspicion_delta": 0,
+        "note": "A general statement is consistent with a specific earlier claim."
+      }
+    },
+    {
+      "case_name": "humor_or_sarcasm",
+      "player_statement": "If I were a master thief, I would at least wear a tuxedo like in the spy films!",
+      "expected": {
+        "is_contradiction": false,
+        "treated_as_claim": false,
+        "suspicion_delta": 0,
+        "note": "Jokes and sarcasm must not be parsed into biographical identity slots."
+      }
+    },
+    {
+      "case_name": "hypothetical_query",
+      "player_statement": "Hypothetically, if the alarm system were tested tonight, which exit would visitors use?",
+      "expected": {
+        "is_contradiction": false,
+        "treated_as_claim": false,
+        "suspicion_delta": 0,
+        "note": "Hypothetical queries are not factual claims about player identity."
+      }
+    }
+  ]
+}

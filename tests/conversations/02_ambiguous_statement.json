@@ -1,0 +1,22 @@
+{
+  "test_id": "02_ambiguous_statement",
+  "title": "Ambiguous Statement Handling",
+  "description": "Verifies that an ambiguous statement is recorded with ambiguous status and prompts a clarification request without suspicion penalties.",
+  "location_id": "museum_entrance",
+  "guard_id": "guard_casual",
+  "turns": [
+    {
+      "step": 1,
+      "speaker": "player",
+      "text": "I work with artifacts, sometimes here, sometimes somewhere else.",
+      "expected": {
+        "status": "clarification_requested",
+        "claims_extracted": [
+          {"slot": "occupation", "value": "works with artifacts", "status": "ambiguous"}
+        ],
+        "suspicion_delta": 0,
+        "guard_prompt": "Could you be more specific about your official role?"
+      }
+    }
+  ]
+}

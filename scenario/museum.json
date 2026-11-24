@@ -1,0 +1,550 @@
+{
+  "scenario_id": "the_forgotten_artifact",
+  "title": "The Forgotten Artifact",
+  "summary": "A priceless historical relic, the Celestial Astrolabe, rests in the museum's high-security vault. Infiltrate the grounds, navigate past the security patrol, and secure the artifact before the night shift locks down the building.",
+  "location_name": "Grand Museum",
+  "location_image": "/app/static/images/museum_entrance.webp",
+  "starting_location": "museum_entrance",
+  "mission_briefing": {
+    "title": "The Forgotten Artifact",
+    "summary": "A priceless historical relic, the Celestial Astrolabe, rests in the museum's high-security vault. Infiltrate the grounds, navigate past the security patrol, and secure the artifact before the night shift locks down the building.",
+    "location_name": "Grand Museum",
+    "location_image": "/app/static/images/museum_entrance.webp",
+    "primary_objective": "Retrieve the Celestial Astrolabe from the vault display.",
+    "optional_objectives": [
+      "Complete the mission without triggering an interrogation.",
+      "Maintain cover with zero unresolved contradictions."
+    ],
+    "information": "Security personnel are deployed across all sectors. Guard patrols cross-reference statements with checkpoint incident logs."
+  },
+  "starting_inventory": [
+    {
+      "id": "fake_passport",
+      "name": "Fake Passport",
+      "quantity": 1,
+      "image": "/app/static/inventory/fake_passport.png"
+    },
+    {
+      "id": "bribe_money",
+      "name": "Bribe Money",
+      "quantity": 3,
+      "image": "/app/static/inventory/bribe_money.png"
+    },
+    {
+      "id": "invitation_letter",
+      "name": "Invitation Letter",
+      "quantity": 1,
+      "image": "/app/static/inventory/invitation_letter.png"
+    },
+    {
+      "id": "access_card",
+      "name": "Access Card",
+      "quantity": 0,
+      "image": ""
+    }
+  ],
+  "locations": [
+    {
+      "id": "museum_entrance",
+      "name": "Museum Entrance & Reception",
+      "short_description": "The marble-columned entry foyer where incoming guests register at the front desk. Glass turnstiles lead inward under warm chandelier lighting.",
+      "security_level": 1,
+      "image": "/app/static/images/museum_entrance.webp",
+      "thumbnail": "/app/static/images/museum_entrance.webp"
+    },
+    {
+      "id": "main_hall",
+      "name": "Main Exhibition Hall",
+      "short_description": "A vast gallery filled with classical sculptures and illuminated glass display cases. Visitors wander along designated velvet carpet paths.",
+      "security_level": 2,
+      "image": "/app/static/images/main_exhibition_hall.webp",
+      "thumbnail": "/app/static/images/main_exhibition_hall_thumb.webp"
+    },
+    {
+      "id": "security_checkpoint",
+      "name": "Security Checkpoint",
+      "short_description": "A reinforced screening corridor dividing the public wings from administrative quarters. Heavy metal detectors and an ID scanner control passage.",
+      "security_level": 3,
+      "image": "/app/static/images/security_checkpoint.webp",
+      "thumbnail": "/app/static/images/security_checkpoint.webp"
+    },
+    {
+      "id": "restricted_area",
+      "name": "Restricted Collection Area",
+      "short_description": "A quiet, climate-controlled corridor lined with locked archival vaults and curator research stations. Warning signs mark authorized staff access only.",
+      "security_level": 4,
+      "image": "/app/static/images/restricted_collection_area.webp",
+      "thumbnail": "/app/static/images/restricted_collection_area.webp"
+    },
+    {
+      "id": "vault_display",
+      "name": "Vault Display Sanctum",
+      "short_description": "An armored inner chamber housing the museum's most prized antiquities inside a pressurized glass pedestal. Motion sensors line the perimeter.",
+      "security_level": 5,
+      "image": "/app/static/images/restricted_collection_area.webp",
+      "thumbnail": "/app/static/images/restricted_collection_area.webp"
+    }
+  ],
+  "routes": [
+    {
+      "from_location": "museum_entrance",
+      "to_location": "main_hall",
+      "condition": {
+        "type": "objective_completed",
+        "objective_id": "enter_museum"
+      }
+    },
+    {
+      "from_location": "main_hall",
+      "to_location": "museum_entrance",
+      "condition": null
+    },
+    {
+      "from_location": "main_hall",
+      "to_location": "security_checkpoint",
+      "condition": {
+        "type": "objective_completed",
+        "objective_id": "reach_main_hall"
+      }
+    },
+    {
+      "from_location": "security_checkpoint",
+      "to_location": "main_hall",
+      "condition": null
+    },
+    {
+      "from_location": "security_checkpoint",
+      "to_location": "restricted_area",
+      "condition": {
+        "type": "objective_completed",
+        "objective_id": "pass_security"
+      }
+    },
+    {
+      "from_location": "restricted_area",
+      "to_location": "security_checkpoint",
+      "condition": null
+    },
+    {
+      "from_location": "restricted_area",
+      "to_location": "vault_display",
+      "condition": {
+        "type": "objective_completed",
+        "objective_id": "reach_restricted_area"
+      }
+    },
+    {
+      "from_location": "vault_display",
+      "to_location": "restricted_area",
+      "condition": null
+    }
+  ],
+  "guards": [
+    {
+      "id": "guard_casual",
+      "name": "Officer Miller",
+      "role": "Reception Desk Guard",
+      "personality": "casual",
+      "assigned_location": "museum_entrance",
+      "opening_line": "Hey there! Welcome to the Grand Museum—just need to see your ticket or ID before you head in.",
+      "style_note": "Laid-back, conversational tone; readily accepts relaxed explanations but flags glaring contradictions.",
+      "portrait": "/app/static/images/casual.webp"
+    },
+    {
+      "id": "guard_strict",
+      "name": "Officer Graves",
+      "role": "Hallway Warden",
+      "personality": "strict",
+      "assigned_location": "main_hall",
+      "opening_line": "Halt. The main gallery is operating under strict perimeter surveillance tonight.",
+      "style_note": "Curt, formal, by-the-book; dismisses casual small talk and demands specific institutional credentials.",
+      "portrait": "/app/static/images/strict.webp"
+    },
+    {
+      "id": "guard_observant",
+      "name": "Inspector Lin",
+      "role": "Checkpoint Officer",
+      "personality": "observant",
+      "assigned_location": "security_checkpoint",
+      "opening_line": "Step forward to the scanner, please. State your clearance and authorized department.",
+      "style_note": "Meticulous and analytical; cross-checks tiny details and timestamps against security logs.",
+      "portrait": "/app/static/images/observant.webp"
+    },
+    {
+      "id": "guard_experienced",
+      "name": "Chief Sterling",
+      "role": "Archive Custodian",
+      "personality": "experienced",
+      "assigned_location": "restricted_area",
+      "opening_line": "Thirty years here, and I know every curator on staff. Who approved your access back here?",
+      "style_note": "Shrewd, unflappable veteran; spots rehearsed lies and asks probing institutional history questions.",
+      "portrait": "/app/static/images/experienced.webp"
+    },
+    {
+      "id": "guard_impatient",
+      "name": "Officer Gomez",
+      "role": "Vault Gatekeeper",
+      "personality": "impatient",
+      "assigned_location": "vault_display",
+      "opening_line": "Make it quick, we're locking down this vault in five minutes. What's your business?",
+      "style_note": "Abrupt, hurried, easily agitated; cuts off rambling answers and demands quick, direct proof.",
+      "portrait": "/app/static/images/interrogator.webp"
+    }
+  ],
+  "items": [
+    {
+      "id": "fake_passport",
+      "name": "Fake Passport",
+      "description": "A high-quality forged international passport stamped with academic research visas.",
+      "type": "reusable",
+      "starting_quantity": 1,
+      "image": "/app/static/inventory/fake_passport.png",
+      "usage_conditions": {
+        "locations": ["museum_entrance", "security_checkpoint"]
+      },
+      "effects": {
+        "guard_casual": {
+          "outcome": "success",
+          "consumed": false,
+          "suspicion_delta": -5,
+          "dialogue": "Let me take a look... Everything seems in order. Welcome, Doctor.",
+          "notice": "The receptionist validated your research passport."
+        },
+        "guard_strict": {
+          "outcome": "partial_success",
+          "consumed": false,
+          "suspicion_delta": 5,
+          "dialogue": "A foreign research document. I will log the serial, but you are not clear for restricted wings.",
+          "notice": "Officer Graves scrutinized the passport numbers suspiciously."
+        },
+        "guard_observant": {
+          "outcome": "failure",
+          "consumed": false,
+          "suspicion_delta": 20,
+          "dialogue": "This watermark doesn't match the ministry registry. Stand right where you are.",
+          "notice": "Inspector Lin flagged the counterfeit watermark."
+        }
+      }
+    },
+    {
+      "id": "bribe_money",
+      "name": "Bribe Money",
+      "description": "A thick envelope of unmarked bearer currency.",
+      "type": "consumable",
+      "starting_quantity": 3,
+      "image": "/app/static/inventory/bribe_money.png",
+      "usage_conditions": {
+        "min_quantity": 1
+      },
+      "effects": {
+        "guard_casual": {
+          "outcome": "success",
+          "consumed": true,
+          "suspicion_delta": -15,
+          "dialogue": "Hm. I didn't see anything. Move along, friend.",
+          "notice": "The guard discreetly pockets the cash and looks away."
+        },
+        "guard_impatient": {
+          "outcome": "success",
+          "consumed": true,
+          "suspicion_delta": -10,
+          "dialogue": "Yeah, whatever. Just hurry up and finish whatever you're doing before shift change.",
+          "notice": "The gatekeeper takes the envelope and waves you through."
+        },
+        "guard_strict": {
+          "outcome": "failure",
+          "consumed": false,
+          "suspicion_delta": 30,
+          "dialogue": "Attempted bribery of an officer? You just compounded your violations.",
+          "notice": "Officer Graves angrily rejected the bribe attempt."
+        }
+      }
+    },
+    {
+      "id": "invitation_letter",
+      "name": "Invitation Letter",
+      "description": "An embossed VIP gala invitation bearing the signature of the Museum Board President.",
+      "type": "reusable",
+      "starting_quantity": 1,
+      "image": "/app/static/inventory/invitation_letter.png",
+      "usage_conditions": {
+        "locations": ["museum_entrance", "main_hall", "security_checkpoint"]
+      },
+      "effects": {
+        "guard_casual": {
+          "outcome": "success",
+          "consumed": false,
+          "suspicion_delta": -10,
+          "dialogue": "An executive invitation! Right this way, esteemed guest.",
+          "notice": "The receptionist bows and logs your gala clearance."
+        },
+        "guard_strict": {
+          "outcome": "partial_success",
+          "consumed": false,
+          "suspicion_delta": 0,
+          "dialogue": "An invitation. Who signed it? The board gala is in the pavilion, not the private vaults.",
+          "notice": "Officer Graves inspected the seal and noted the discrepancy."
+        },
+        "guard_observant": {
+          "outcome": "success",
+          "consumed": false,
+          "suspicion_delta": -5,
+          "dialogue": "Presidential seal verified. You may proceed through checkpoint screening.",
+          "notice": "Inspector Lin clears your gala credentials."
+        }
+      }
+    },
+    {
+      "id": "access_card",
+      "name": "Access Card",
+      "description": "A magnetic keycard encoded with Level-4 senior curator privileges.",
+      "type": "reusable",
+      "starting_quantity": 0,
+      "image": "",
+      "usage_conditions": {
+        "locations": ["security_checkpoint", "restricted_area", "vault_display"]
+      },
+      "effects": {
+        "guard_observant": {
+          "outcome": "success",
+          "consumed": false,
+          "suspicion_delta": -10,
+          "dialogue": "Keycard confirmed on scanner. Terminal cleared for sector transit.",
+          "notice": "Security checkpoint turnstile unlocked."
+        },
+        "guard_experienced": {
+          "outcome": "success",
+          "consumed": false,
+          "suspicion_delta": -5,
+          "dialogue": "Senior curator card. Alright, but be careful around the preservation containers.",
+          "notice": "Chief Sterling stepped aside after checking the card."
+        },
+        "guard_impatient": {
+          "outcome": "success",
+          "consumed": false,
+          "suspicion_delta": -5,
+          "dialogue": "Card accepted. You've got five minutes before auto-lock.",
+          "notice": "Vault access latch disengaged."
+        }
+      }
+    }
+  ],
+  "objectives": [
+    {
+      "id": "enter_museum",
+      "name": "Enter the Museum",
+      "text": "Enter the museum",
+      "description": "Gain clearance past reception into the museum grounds.",
+      "completion_type": "location_reached",
+      "target": "museum_entrance"
+    },
+    {
+      "id": "reach_main_hall",
+      "name": "Reach the Main Hall",
+      "text": "Reach the main hall",
+      "description": "Navigate into the central exhibition gallery without incident.",
+      "completion_type": "location_reached",
+      "target": "main_hall"
+    },
+    {
+      "id": "pass_security",
+      "name": "Pass the Security Checkpoint",
+      "text": "Pass security",
+      "description": "Clear security inspection to access restricted corridors.",
+      "completion_type": "location_reached",
+      "target": "security_checkpoint"
+    },
+    {
+      "id": "reach_restricted_area",
+      "name": "Reach the Restricted Area",
+      "text": "Enter the restricted area",
+      "description": "Infiltrate the secure archival collections wing.",
+      "completion_type": "location_reached",
+      "target": "restricted_area"
+    },
+    {
+      "id": "retrieve_artifact",
+      "name": "Retrieve the Artifact",
+      "text": "Retrieve the artifact",
+      "description": "Secure the Celestial Astrolabe from the inner vault display.",
+      "completion_type": "location_reached",
+      "target": "vault_display"
+    }
+  ],
+  "suspicion_settings": {
+    "starting_value": 10,
+    "min_value": 0,
+    "max_value": 100,
+    "thresholds": [
+      {
+        "range": [0, 19],
+        "tier": "unsuspecting",
+        "label": "Low Attention",
+        "behavior": "Guards are calm, friendly, and accept plausible statements without deep probing."
+      },
+      {
+        "range": [20, 39],
+        "tier": "inquiring",
+        "label": "Moderate Attention",
+        "behavior": "Guards ask follow-up questions and verify minor details."
+      },
+      {
+        "range": [40, 59],
+        "tier": "scrutiny",
+        "label": "Increased Scrutiny",
+        "behavior": "Guards request corroborating documents or cross-reference previous statements."
+      },
+      {
+        "range": [60, 79],
+        "tier": "suspicious",
+        "label": "High Scrutiny",
+        "behavior": "Guards challenge inconsistencies directly and consult shared security logs."
+      },
+      {
+        "range": [80, 99],
+        "tier": "hostile",
+        "label": "Imminent Detention",
+        "behavior": "Guards are on high alert, restrict further movement, and demand immediate justification."
+      },
+      {
+        "range": [100, 100],
+        "tier": "interrogation",
+        "label": "Interrogation Triggered",
+        "behavior": "Immediate halt: player is placed into formal interrogation."
+      }
+    ],
+    "event_table": {
+      "contradiction": {
+        "delta": 25,
+        "note": "Direct conflict with an earlier asserted claim"
+      },
+      "unconvincing_explanation": {
+        "delta": 20,
+        "note": "Player provides an implausible or evasive answer during questioning"
+      },
+      "partially_convincing_explanation": {
+        "delta": 5,
+        "note": "Player gives a somewhat plausible answer that leaves lingering doubt"
+      },
+      "convincing_explanation": {
+        "delta": -10,
+        "note": "Player provides a credible, consistent explanation with evidence"
+      },
+      "repeated_evasion": {
+        "delta": 15,
+        "note": "Player dodges direct questions across multiple turns"
+      },
+      "failed_item_use": {
+        "delta": 20,
+        "note": "Player attempts to use an invalid or rejected item on a guard"
+      },
+      "successful_item_use": {
+        "delta": -5,
+        "note": "Player presents valid credentials or an effective diversion"
+      }
+    },
+    "balancing_note": "Initial balancing values for playtesting; tune based on playtest contradiction rates."
+  },
+  "endings": [
+    {
+      "id": "perfect_infiltration",
+      "title": "Perfect Infiltration",
+      "outcome_label": "Perfect Infiltration",
+      "tone": "success",
+      "heading": "MISSION COMPLETE",
+      "conditions": {
+        "objectives_required": ["retrieve_artifact"],
+        "max_suspicion": 30,
+        "interrogations_allowed": 0,
+        "unresolved_contradictions": 0
+      },
+      "narration_seed": "You slip through the shadowy museum corridors like a whisper. The Celestial Astrolabe is safely secured, leaving the guards wondering how a phantom slipped right under their watchful eyes.",
+      "quote": "Flawless execution, Rob. The Agency couldn't have written it better.",
+      "quote_by": "The Agency",
+      "scene_image": "/app/static/images/restricted_collection_area.webp",
+      "scene_caption": "The artifact vault, quiet and empty"
+    },
+    {
+      "id": "successful_infiltration",
+      "title": "Successful Infiltration",
+      "outcome_label": "Successful Infiltration",
+      "tone": "success",
+      "heading": "MISSION COMPLETE",
+      "conditions": {
+        "objectives_required": ["retrieve_artifact"],
+        "max_suspicion": 65,
+        "interrogations_allowed": 1
+      },
+      "narration_seed": "With steady nerves and quick wits, you walk out into the cool night air with the astrolabe hidden away. A few guards raised eyebrows, but you stayed one step ahead.",
+      "quote": "Another successful operation, Rob. Clean enough for the books.",
+      "quote_by": "The Agency",
+      "scene_image": "/app/static/images/restricted_collection_area.webp",
+      "scene_caption": "The artifact on display in the Grand Museum vault"
+    },
+    {
+      "id": "compromised_victory",
+      "title": "Compromised Victory",
+      "outcome_label": "Compromised Victory",
+      "tone": "partial",
+      "heading": "MISSION COMPLETE",
+      "conditions": {
+        "objectives_required": ["retrieve_artifact"],
+        "min_suspicion": 66,
+        "max_suspicion": 99
+      },
+      "narration_seed": "Alarms begin to chime just as you cross the museum perimeter. You got the artifact, but your cover story is blown and security teams are already pulling camera feeds.",
+      "quote": "You got out. Barely. Don't expect the cleanup crew to thank you.",
+      "quote_by": "The Agency",
+      "scene_image": "/app/static/images/museum_entrance.webp",
+      "scene_caption": "Grand Museum exterior at night"
+    },
+    {
+      "id": "capture_failure",
+      "title": "Capture / Failure",
+      "outcome_label": "Captured",
+      "tone": "failure",
+      "heading": "MISSION FAILED",
+      "conditions": {
+        "suspicion_trigger": 100,
+        "interrogation_failed": true
+      },
+      "narration_seed": "The interrogation room door clicks shut. The chief investigator reviews the glaring contradictions in your visitor logs, and the museum vault remains securely sealed.",
+      "quote": "The Agency does not know you. The mission is officially disavowed.",
+      "quote_by": "The Agency",
+      "scene_image": "/app/static/images/interrogation_room.webp",
+      "scene_caption": "Holding room"
+    },
+    {
+      "id": "alternate_ending",
+      "title": "Alternate Ending: Academic Discovery",
+      "outcome_label": "Alternative Run",
+      "tone": "partial",
+      "heading": "MISSION CONCLUDED",
+      "conditions": {
+        "item_used": "fake_passport",
+        "location_reached": "restricted_area",
+        "suspicion_below": 50,
+        "voluntary_exit": true
+      },
+      "narration_seed": "Instead of taking the astrolabe, your extensive scholarly cover story convinces Chief Sterling to invite you onto the museum's honorary advisory board. You leave with an official catalog entry and no criminal record.",
+      "quote": "An unorthodox outcome, Rob. Sometimes the cover story is worth more than the prize.",
+      "quote_by": "The Agency",
+      "scene_image": "/app/static/images/main_exhibition_hall.webp",
+      "scene_caption": "Exhibition gallery under archive lighting"
+    }
+  ],
+  "challenges": {
+    "optional_challenge": {
+      "id": "ghost_operative",
+      "name": "Ghost Operative",
+      "description": "Finish the mission without triggering an interrogation.",
+      "condition": "zero_interrogations"
+    },
+    "hidden_challenge": {
+      "id": "silver_tongue",
+      "name": "Silver Tongue",
+      "description": "Finish the mission with zero unresolved contradictions.",
+      "condition": "zero_unresolved_contradictions"
+    }
+  }
+}

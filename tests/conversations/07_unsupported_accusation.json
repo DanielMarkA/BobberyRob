@@ -1,0 +1,22 @@
+{
+  "test_id": "07_unsupported_accusation",
+  "title": "Unsupported Guard Accusation Rejection",
+  "description": "Ensures that if a guard accuses the player of an assertion never recorded in memory, the system treats it as invalid without penalty.",
+  "location_id": "main_hall",
+  "guard_id": "guard_strict",
+  "turns": [
+    {
+      "step": 1,
+      "speaker": "guard",
+      "text": "You told Officer Miller at reception that you were carrying high-yield explosives!",
+      "expected": {
+        "evidence_lookup": "find_evidence",
+        "evidence_found": false,
+        "accusation_valid": false,
+        "state_penalty_applied": false,
+        "suspicion_delta": 0,
+        "system_notice": "Unsupported accusation dismissed by game engine."
+      }
+    }
+  ]
+}

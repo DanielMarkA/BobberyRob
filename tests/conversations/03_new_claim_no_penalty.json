@@ -1,0 +1,36 @@
+{
+  "test_id": "03_new_claim_no_penalty",
+  "title": "New Claim Without Penalty",
+  "description": "Verifies that introducing new asserted claims in unoccupied slots does not trigger automatic suspicion.",
+  "location_id": "museum_entrance",
+  "guard_id": "guard_casual",
+  "turns": [
+    {
+      "step": 1,
+      "speaker": "player",
+      "text": "I'm Dr. Vance, an art historian.",
+      "expected": {
+        "status": "ok",
+        "claims_extracted": [
+          {"slot": "name", "value": "Dr. Vance", "status": "asserted"},
+          {"slot": "occupation", "value": "art historian", "status": "asserted"}
+        ],
+        "suspicion_delta": 0
+      }
+    },
+    {
+      "step": 2,
+      "speaker": "player",
+      "text": "I was invited here by Museum Director Thornton to inspect the Cynthia collection.",
+      "expected": {
+        "status": "ok",
+        "claims_extracted": [
+          {"slot": "reason_for_visit", "value": "inspect Cynthia collection", "status": "asserted"},
+          {"slot": "relationships", "value": "invited by Director Thornton", "status": "asserted"}
+        ],
+        "suspicion_delta": 0,
+        "conflict_detected": false
+      }
+    }
+  ]
+}

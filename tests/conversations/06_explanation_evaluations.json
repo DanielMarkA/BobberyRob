@@ -1,0 +1,39 @@
+{
+  "test_id": "06_explanation_evaluations",
+  "title": "Interrogation Explanation Outcomes",
+  "description": "Tests how different explanation tiers (convincing, partially convincing, unconvincing) resolve contradictions during questioning.",
+  "location_id": "security_checkpoint",
+  "guard_id": "guard_observant",
+  "cases": [
+    {
+      "tier": "unconvincing",
+      "player_explanation": "Maybe a ghost told the other guard that, or I slipped into an alternate reality.",
+      "expected": {
+        "evaluation": "unconvincing",
+        "suspicion_delta": 20,
+        "interrogation_resolved": false,
+        "guard_response": "That makes no sense whatsoever. Your suspicion is noted."
+      }
+    },
+    {
+      "tier": "partially_convincing",
+      "player_explanation": "I hold dual qualifications in fine art conservation and electrical systems maintenance.",
+      "expected": {
+        "evaluation": "partially_convincing",
+        "suspicion_delta": 5,
+        "interrogation_resolved": false,
+        "guard_response": "An unusual combination. I will let you proceed with caution, but watch your step."
+      }
+    },
+    {
+      "tier": "convincing",
+      "player_explanation": "Here is my dual-certification dispatch from the National Heritage Trust approving electrical inspection of the display lighting.",
+      "expected": {
+        "evaluation": "convincing",
+        "suspicion_delta": -10,
+        "interrogation_resolved": true,
+        "guard_response": "Dispatch numbers verified on the registry. You are clear to continue."
+      }
+    }
+  ]
+}

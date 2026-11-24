@@ -1,0 +1,13 @@
+{
+  "test_id": "11_invalid_route",
+  "title": "Invalid Direct Route Transition Attempt",
+  "description": "Verifies that players cannot bypass intermediate rooms or jump non-adjacent routes.",
+  "start_location": "museum_entrance",
+  "target_location": "restricted_area",
+  "expected": {
+    "valid_route": false,
+    "transition_allowed": false,
+    "current_location_after": "museum_entrance",
+    "notice": "You cannot reach the Restricted Area directly from the Museum Entrance."
+  }
+}
