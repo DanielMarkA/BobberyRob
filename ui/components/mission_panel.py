@@ -3,6 +3,33 @@ import html
 import streamlit as st
 
 from ui.components import objectives
+from ui.data_provider import move_to_location, trigger_voluntary_exit
+
+
+def _queue_move(target_location: str) -> None:
+    st.session_state["pending_move"] = target_location
+
+
+def _queue_voluntary_exit() -> None:
+    st.session_state["pending_voluntary_exit"] = True
+
+
+def process_pending() -> None:
+    """Process queued route or voluntary-exit actions before rendering."""
+    target = st.session_state.pop("pending_move", None)
+    if target is not None:
+        try:
+            st.session_state["game"] = move_to_location(target)
+            st.session_state.pop("move_error", None)
+        except Exception:
+            st.session_state["move_error"] = "Could not move to that location."
+
+    if st.session_state.pop("pending_voluntary_exit", False):
+        try:
+            st.session_state["game"] = trigger_voluntary_exit()
+            st.session_state.pop("move_error", None)
+        except Exception:
+            st.session_state["move_error"] = "Could not complete voluntary exit."
 
 
 def render(game: dict) -> None:
@@ -25,5 +52,30 @@ def render(game: dict) -> None:
         f'<p class="checkpoint-location-name">{esc(location["name"])}</p>{thumbnail}'
         "</section>"
     )
+
+    routes = game.get("available_routes") or []
+    can_exit = bool(game.get("can_voluntary_exit", False))
+    if routes or can_exit:
+        with st.container(key="checkpoint_routes"):
+            for route in routes:
+                verb = "Proceed to" if route.get("is_forward") else "Return to"
+                st.button(
+                    f"{verb} {route['name']}",
+                    key=f"move_{route['to_location']}",
+                    type="primary" if route.get("is_forward") and route.get("unlocked") else "secondary",
+                    disabled=not route.get("unlocked"),
+                    help=route.get("reason") or None,
+                    on_click=_queue_move,
+                    args=(route["to_location"],),
+                    width="stretch",
+                )
+            if can_exit:
+                st.button(
+                    "Accept Advisory Invite (Leave Museum)",
+                    key="voluntary_exit",
+                    type="secondary",
+                    on_click=_queue_voluntary_exit,
+                    width="stretch",
+                )
 
     objectives.render(game["objectives"])

@@ -44,11 +44,19 @@ def render(game: dict) -> None:
         if scene.get(kind)
     )
 
+    interrogation = game.get("interrogation") or {}
+    evidence_quotes = interrogation.get("evidence_quotes") or []
+    evidence_note = (
+        f'On record: "{evidence_quotes[0]}"' if evidence_quotes else None
+    )
+
     feedback = "".join(
         f'<p class="checkpoint-feedback{modifier}" role="{role}">{esc(message)}</p>'
         for message, modifier, role in (
             (st.session_state.get("send_error"), " error", "alert"),
             (st.session_state.get("item_error"), " error", "alert"),
+            (st.session_state.get("move_error"), " error", "alert"),
+            (evidence_note, "", "status"),
             (game.get("notice"), "", "status"),
         )
         if message

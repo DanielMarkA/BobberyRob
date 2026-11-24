@@ -36,7 +36,12 @@ def render() -> None:
         # Send queued actions before drawing, so every panel sees the new state.
         dialogue_panel.process_pending()
         inventory.process_pending()
+        mission_panel.process_pending()
         game = st.session_state["game"]
+
+        if game.get("ended"):
+            go_to(RESULTS)
+            st.rerun()
 
         # Conversation comes first in DOM for mobile and keyboard order;
         # desktop CSS maps columns to Left: Mission | Center: Scenes | Right: Status.
