@@ -8,11 +8,11 @@ from ui.formatting import format_penalty, format_time_precise
 from ui.navigation import go_to, MAIN_MENU, MISSION_BRIEFING
 
 
-def _row(label: str, value: str, extra: str = "") -> str:
+def _row(label: str, value: str, icon: str) -> str:
     return (
-        f'<div class="result-row{extra}">'
-        f"<span>{html.escape(label)}</span>"
-        f'<span class="v">{html.escape(value)}</span>'
+        '<div class="result-row">'
+        f'<dt class="result-icon-{icon}">{html.escape(label)}</dt>'
+        f'<dd>{html.escape(value)}</dd>'
         "</div>"
     )
 
@@ -21,68 +21,72 @@ def _time(seconds) -> str:
     return format_time_precise(seconds) if seconds is not None else "—"
 
 
+def _summary(result: dict, tone: str) -> None:
+    esc = html.escape
+    penalty_rows = "".join(
+        _row(penalty["label"], format_penalty(penalty["seconds"]), "timer")
+        for penalty in result["penalties"]
+    ) or _row("Penalties", "None", "timer")
+    note = "" if result["adjusted_seconds"] is not None else (
+        '<p class="result-note">Failed attempts are not ranked.</p>'
+    )
+    record = '<span class="result-record">New Record!</span>' if result["is_new_record"] else ""
+    st.html(
+        '<section class="result-details">'
+        f'<h1 class="result-heading">{esc(result["heading"])}</h1>'
+        f'<p class="result-banner {tone}">{esc(result["outcome_label"])}</p>'
+        '<div class="result-clock">'
+        '<p class="result-time-label">Time including penalties</p>'
+        f'<p class="result-time">{_time(result["adjusted_seconds"])}</p>{note}</div>'
+        '<div class="result-breakdown">'
+        '<dl class="result-stat-group">'
+        + _row("Gameplay time", _time(result["raw_seconds"]), "timer")
+        + penalty_rows
+        + '</dl><dl class="result-stat-group">'
+        + _row("Final Suspicion", f'{result["final_suspicion"]} / 100', "shield")
+        + _row("Objectives Completed", f'{result["objectives_done"]} / {result["objectives_total"]}', "target")
+        + '</dl></div>'
+        '<div class="result-best">'
+        '<span class="result-best-label">Personal best</span>'
+        f'<strong class="result-best-time result-icon-trophy">{_time(result["personal_best_seconds"])}</strong>'
+        f'{record}</div></section>'
+    )
+
+
+def _artwork(result: dict, tone: str) -> None:
+    esc = html.escape
+    description = esc(result["scene_caption"])
+    image = result.get("scene_image")
+    art = f'<img src="{esc(image)}" alt="{description}">' if image else f'<span>{description}</span>'
+    st.html(
+        f'<figure class="result-scene {tone}">'
+        f'<div class="result-art">{art}</div>'
+        '<figcaption class="result-attribution">'
+        f'<blockquote>“{esc(result["quote"])}”</blockquote>'
+        f'<p>— {esc(result["quote_by"])}</p></figcaption></figure>'
+    )
+
+
 def render() -> None:
     header.render()
+    with st.container(key="results"):
+        try:
+            result = get_mission_result()
+        except Exception:
+            st.error("Could not load your results. Please try again.")
+            st.button("Back to main menu", on_click=go_to, args=(MAIN_MENU,))
+            return
 
-    try:
-        r = get_mission_result()
-    except Exception:
-        st.error("Could not load your results. Please try again.")
-        st.button("Back to main menu", on_click=go_to, args=(MAIN_MENU,))
-        return
+        tone = result["tone"] if result["tone"] in ("success", "partial", "failure") else ""
+        stats, art = st.columns(2)
+        with stats:
+            _summary(result, tone)
 
-    esc = html.escape
-
-    if r["penalties"]:
-        penalty_rows = "".join(
-            _row(p["label"], format_penalty(p["seconds"])) for p in r["penalties"]
-        )
-    else:
-        penalty_rows = _row("Penalties", "None")
-
-    note = "" if r["adjusted_seconds"] is not None else (
-        '<div class="result-note">Failed attempts are not ranked.</div>'
-    )
-    badge = '<span class="pb-badge">New Record!</span>' if r["is_new_record"] else ""
-
-    col_left, col_right = st.columns([660, 854], gap="large")
-
-    with col_left:
-        st.markdown(
-            '<div class="result-scene">'
-            '<div class="scene-art">'
-            '<div class="img-slot-label">Mission result image</div>'
-            f'<div class="img-slot-caption">{esc(r["scene_caption"])}</div>'
-            "</div>"
-            f'<div class="result-quote">“{esc(r["quote"])}”'
-            f'<small>— {esc(r["quote_by"])}</small></div>'
-            "</div>",
-            unsafe_allow_html=True,
-        )
-
-    with col_right:
-        st.markdown(
-            f'<div class="result-heading">{esc(r["heading"])}</div>'
-            f'<div class="result-banner {esc(r["tone"])}">{esc(r["outcome_label"])}</div>'
-            '<div class="result-label">Adjusted completion time</div>'
-            f'<div class="result-time">{_time(r["adjusted_seconds"])}</div>'
-            + note
-            + _row("Raw Gameplay Time", _time(r["raw_seconds"]))
-            + penalty_rows
-            + _row("Adjusted Time", _time(r["adjusted_seconds"]), " total")
-            + _row("Final Suspicion", f'{r["final_suspicion"]} / 100')
-            + _row("Objectives Completed", f'{r["objectives_done"]} / {r["objectives_total"]}')
-            + '<div class="pb-panel"><div class="pb-label">Personal best</div>'
-            f'<div class="pb-row"><span class="pb-time">{_time(r["personal_best_seconds"])}</span>'
-            f"{badge}</div></div>",
-            unsafe_allow_html=True,
-        )
-
-    with st.container(key="result_actions"):
-        _, mid, _ = st.columns([1, 3, 1])
-        with mid:
-            col_retry, col_menu = st.columns(2, gap="medium")
-            with col_retry:
-                st.button("TRY AGAIN", on_click=go_to, args=(MISSION_BRIEFING,), width="stretch")
-            with col_menu:
-                st.button("MAIN MENU", type="primary", on_click=go_to, args=(MAIN_MENU,), width="stretch")
+        with art, st.container(key="result_visual"):
+            _artwork(result, tone)
+            with st.container(key="result_actions"):
+                retry, menu = st.columns(2)
+                with retry:
+                    st.button("Try again", key="result_retry", on_click=go_to, args=(MISSION_BRIEFING,), width="stretch")
+                with menu:
+                    st.button("Main menu", key="result_menu", type="primary", on_click=go_to, args=(MAIN_MENU,), width="stretch")
