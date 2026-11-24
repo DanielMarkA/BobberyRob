@@ -57,10 +57,10 @@ def render() -> None:
                     '<span class="brief-corner brief-c-tr" aria-hidden="true"></span>'
                     '<span class="brief-corner brief-c-bl" aria-hidden="true"></span>'
                     '<span class="brief-corner brief-c-br" aria-hidden="true"></span>'
-                    f'<img src="{esc(image)}" alt="Exterior of {location}">'
+                    f'<img src="{esc(image)}" alt="Mission target on display at {location}">'
                     '<figcaption class="brief-plate-caption">'
                     '<span class="brief-pin" aria-hidden="true"></span>'
-                    f"<span>{location}</span></figcaption>"
+                    f"<span>Target photo · {location}</span></figcaption>"
                     "</figure>"
                 )
             else:

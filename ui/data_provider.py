@@ -44,10 +44,10 @@ _MOCK_RESULTS = {
         "objectives_total": 3,
         "personal_best_seconds": 522.36,
         "is_new_record": True,
-        "quote": "Another successful operation, Rob.",
+        "quote": "You got out with the urn. Good work, Rob.",
         "quote_by": "The Agency",
-        "scene_image": "/app/static/images/restricted_collection_area.webp",
-        "scene_caption": "The artifact on display in the Grand Museum vault",
+        "scene_image": "/app/static/images/debrief_success.webp",
+        "scene_caption": "Reference photo of the gold urn in its case before the heist",
     },
     "compromised": {
         "heading": "MISSION COMPLETE",
@@ -66,8 +66,8 @@ _MOCK_RESULTS = {
         "is_new_record": False,
         "quote": "You got out. Barely.",
         "quote_by": "The Agency",
-        "scene_image": "/app/static/images/museum_entrance.webp",
-        "scene_caption": "Grand Museum exterior at night",
+        "scene_image": "/app/static/images/debrief_compromised.webp",
+        "scene_caption": "The Grand Museum seen from a rain-soaked sidewalk at night",
     },
     "captured": {
         "heading": "MISSION FAILED",
@@ -83,8 +83,8 @@ _MOCK_RESULTS = {
         "is_new_record": False,
         "quote": "The Agency does not know you.",
         "quote_by": "The Agency",
-        "scene_image": "/app/static/images/interrogation_room.webp",
-        "scene_caption": "Holding room",
+        "scene_image": "/app/static/images/debrief_captured.webp",
+        "scene_caption": "The interrogator sits across the table beneath a lamp",
     },
 }
 
@@ -131,17 +131,17 @@ def enter_game(codename: str) -> dict:
 def get_mission_briefing() -> dict:
     """Return the mission configuration shown on the briefing screen.
 
-    PHASE 6: replace with the real call (data comes from scenarios/museum.json).
-    "location_image" can be None when a scenario has no artwork.
+    PHASE 6: replace with the real call (data comes from scenario/museum.json).
+    "location_image" holds the briefing's target photo, or None if unavailable.
     """
     return {
         "title": "The Forgotten Artifact",
-        "summary": "A priceless artifact has vanished from the museum's restricted collection.",
+        "summary": "Recover the gold urn from the Grand Museum’s restricted collection.",
         "location_name": "Grand Museum",
-        "location_image": "/app/static/images/museum_entrance.webp",
-        "primary_objective": "Enter the restricted collection.",
+        "location_image": "/app/static/images/debrief_success.webp",
+        "primary_objective": "Take the urn from its case and get out with it.",
         "optional_objectives": [
-            "Discover what happened.",
+            "Avoid interrogation.",
             "Keep suspicion low.",
         ],
         "information": "Guards are on high alert.",
@@ -174,9 +174,7 @@ def get_game_state() -> dict:
     st.session_state["_mock_turn"] = 0
 
     return {
-        "mission_summary": (
-            "An artifact has vanished from the restricted collection. Find out what happened."
-        ),
+        "mission_summary": "Reach the vault, steal the gold urn, and get out of the museum.",
         "location": {
             "name": "Main Exhibition Hall",
             "image": "/app/static/images/main_exhibition_hall_thumb.webp",
@@ -189,8 +187,9 @@ def get_game_state() -> dict:
             {"text": "Enter the museum", "done": True},
             {"text": "Reach the main hall", "done": False},
             {"text": "Pass security", "done": False},
-            {"text": "Enter the restricted area", "done": False},
-            {"text": "Investigate the artifact", "done": False},
+            {"text": "Reach the vault", "done": False},
+            {"text": "Take the gold urn", "done": False},
+            {"text": "Escape with the urn", "done": False},
         ],
         "dialogue": {
             "speaker": "Security Guard",
