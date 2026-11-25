@@ -2,6 +2,7 @@ import html
 
 import streamlit as st
 
+from ui.audio import render_audio_controller, reset_speech_dedup
 from ui.components import header
 from ui.data_provider import get_mission_briefing, start_mission
 from ui.navigation import go_to, reset_mission_state, GAMEPLAY, MAIN_MENU
@@ -30,12 +31,14 @@ def _start_action() -> None:
         return
 
     reset_mission_state()
+    reset_speech_dedup()
     go_to(GAMEPLAY)
     st.rerun()
 
 
 def render() -> None:
     header.render(context="Mission Briefing")
+    render_audio_controller(track="menu")
     with st.container(key="mission_briefing"):
         try:
             mission = get_mission_briefing()

@@ -2,6 +2,7 @@ import html
 
 import streamlit as st
 
+from ui.audio import queue_sfx
 from ui.data_provider import submit_response
 
 MAX_RESPONSE_CHARS = 500  # generic safety cap only; the backend owns real limits
@@ -27,8 +28,19 @@ def process_pending() -> bool:
     if text is None:
         return False
 
+    prev_game = st.session_state.get("game") or {}
+    prev_susp = int((prev_game.get("suspicion") or {}).get("value", 0))
+    prev_done = sum(1 for o in prev_game.get("objectives", []) if o.get("done"))
+
     try:
-        st.session_state["game"] = submit_response(text)
+        new_game = submit_response(text)
+        st.session_state["game"] = new_game
+        new_susp = int((new_game.get("suspicion") or {}).get("value", 0))
+        new_done = sum(1 for o in new_game.get("objectives", []) if o.get("done"))
+        if new_susp > prev_susp:
+            queue_sfx("suspicion_up")
+        elif new_done > prev_done:
+            queue_sfx("item_success")
     except Exception:
         # Restore the player's text on next fragment render so they can retry.
         st.session_state["send_error"] = "Could not send your response. Please try again."

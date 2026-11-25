@@ -2,6 +2,7 @@ import os
 
 import streamlit as st
 
+from ui.audio import render_audio_controller, track_for_gameplay
 from ui.components import (
     dialogue_panel, game_timer, header, inventory, mission_panel, suspicion_meter,
 )
@@ -86,6 +87,17 @@ def _render_checkpoint() -> None:
                 st.rerun(scope="fragment")
             except st.errors.StreamlitAPIException:
                 st.rerun()
+
+    # Sync BGM mood, one-shot event SFX, and AI guard neural speech outside the grid container
+    speak_target = (
+        (game["dialogue"]["speaker"], game["dialogue"]["text"], None)
+        if not thinking_status
+        else None
+    )
+    render_audio_controller(
+        track=track_for_gameplay(game),
+        speak_current=speak_target,
+    )
 
 
 def render() -> None:
