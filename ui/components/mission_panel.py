@@ -2,6 +2,7 @@ import html
 
 import streamlit as st
 
+from ui.audio import queue_sfx
 from ui.components import objectives
 from ui.data_provider import move_to_location, trigger_voluntary_exit
 
@@ -20,9 +21,15 @@ def process_pending() -> bool:
     target = st.session_state.pop("pending_move", None)
     if target is not None:
         handled = True
+        prev_loc = ((st.session_state.get("game") or {}).get("location") or {}).get("id")
         try:
-            st.session_state["game"] = move_to_location(target)
+            new_game = move_to_location(target)
+            st.session_state["game"] = new_game
             st.session_state.pop("move_error", None)
+            if (new_game.get("location") or {}).get("id") != prev_loc:
+                queue_sfx("move")
+            else:
+                queue_sfx("item_fail")
         except Exception:
             st.session_state["move_error"] = "Could not move to that location."
 

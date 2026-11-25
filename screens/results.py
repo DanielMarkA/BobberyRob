@@ -2,6 +2,7 @@ import html
 
 import streamlit as st
 
+from ui.audio import render_audio_controller, track_for_result
 from ui.components import header
 from ui.data_provider import get_mission_result
 from ui.formatting import format_penalty, format_time_precise
@@ -87,6 +88,7 @@ def render() -> None:
             return
 
         tone = result["tone"] if result["tone"] in ("success", "partial", "failure") else ""
+        render_audio_controller(track=track_for_result(result))
         stats, art = st.columns(2)
         with stats:
             _summary(result, tone)
