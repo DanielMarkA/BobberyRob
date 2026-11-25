@@ -4,7 +4,7 @@ import streamlit as st
 
 from ui.audio import queue_sfx
 from ui.components import objectives
-from ui.data_provider import move_to_location, trigger_voluntary_exit
+from ui.data_provider import move_to_location, request_curator_escort, trigger_voluntary_exit
 
 
 def _queue_move(target_location: str) -> None:
@@ -13,6 +13,10 @@ def _queue_move(target_location: str) -> None:
 
 def _queue_voluntary_exit() -> None:
     st.session_state["pending_voluntary_exit"] = True
+
+
+def _queue_escort() -> None:
+    st.session_state["pending_escort"] = True
 
 
 def process_pending() -> bool:
@@ -40,6 +44,15 @@ def process_pending() -> bool:
             st.session_state.pop("move_error", None)
         except Exception:
             st.session_state["move_error"] = "Could not complete voluntary exit."
+
+    if st.session_state.pop("pending_escort", False):
+        handled = True
+        try:
+            st.session_state["game"] = request_curator_escort()
+            st.session_state.pop("move_error", None)
+            queue_sfx("item_success")
+        except Exception:
+            st.session_state["move_error"] = "Could not request a curator escort."
     return handled
 
 
@@ -66,8 +79,18 @@ def render(game: dict) -> None:
 
     routes = game.get("available_routes") or []
     can_exit = bool(game.get("can_voluntary_exit", False))
-    if routes or can_exit:
+    can_escort = bool(game.get("can_request_escort", False))
+    if routes or can_exit or can_escort:
         with st.container(key="checkpoint_routes"):
+            if can_escort:
+                st.button(
+                    "Request Night Curator Escort (+25s)",
+                    key="request_curator_escort",
+                    type="primary",
+                    help="Logs an official curator escort for restricted access without an invitation.",
+                    on_click=_queue_escort,
+                    width="stretch",
+                )
             for route in routes:
                 verb = "Proceed to" if route.get("is_forward") else "Return to"
                 st.button(

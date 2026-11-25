@@ -109,24 +109,30 @@ def render_audio_controller(
     item_tooltips: Optional[dict[str, dict[str, str]]] = None,
 ) -> None:
     """Mount/update the persistent browser audio engine, BGM, SFX, guard TTS, and UX keys."""
-    if speak_current is not None:
-        speaker, text, guard_id = speak_current
-        queue_speech(speaker=speaker, text=text, guard_id=guard_id)
-
-    pending_sfx = st.session_state.pop("_audio_pending_sfx", None)
-    pending_speech = st.session_state.pop("_audio_pending_speech", None)
-
+    # Audio & TTS temporarily disabled (BGM, SFX, and guard TTS are muted/skipped below),
+    # while keeping scene fades and inventory hover tooltips active.
+    pending_sfx = None
     speech_payload = None
-    if pending_speech is not None:
-        audio_uri = synthesize_guard_speech_uri(
-            pending_speech["text"], pending_speech["guard_id"]
-        )
-        speech_payload = {
-            "id": pending_speech["id"],
-            "guard_id": pending_speech["guard_id"],
-            "text": pending_speech["text"],
-            "audio_uri": audio_uri,
-        }
+    track = ""
+
+    # if speak_current is not None:
+    #     speaker, text, guard_id = speak_current
+    #     queue_speech(speaker=speaker, text=text, guard_id=guard_id)
+    #
+    # pending_sfx = st.session_state.pop("_audio_pending_sfx", None)
+    # pending_speech = st.session_state.pop("_audio_pending_speech", None)
+    #
+    # speech_payload = None
+    # if pending_speech is not None:
+    #     audio_uri = synthesize_guard_speech_uri(
+    #         pending_speech["text"], pending_speech["guard_id"]
+    #     )
+    #     speech_payload = {
+    #         "id": pending_speech["id"],
+    #         "guard_id": pending_speech["guard_id"],
+    #         "text": pending_speech["text"],
+    #         "audio_uri": audio_uri,
+    #     }
 
     payload = {
         "manifest": _asset_manifest(),
@@ -146,11 +152,7 @@ def render_audio_controller(
           const STORAGE_KEY = "bobbery_audio_prefs_v1";
 
           function loadPrefs() {{
-            try {{
-              const raw = localStorage.getItem(STORAGE_KEY);
-              if (raw) return Object.assign({{ bgm: true, sfx: true, voice: true }}, JSON.parse(raw));
-            }} catch (e) {{}}
-            return {{ bgm: true, sfx: true, voice: true }};
+            return {{ bgm: false, sfx: false, voice: false }};
           }}
 
           function savePrefs(prefs) {{
@@ -659,7 +661,8 @@ def render_audio_controller(
               document.body.appendChild(dock);
             }}
 
-            ensureDock();
+            // Audio dock hidden while audio/TTS is disabled.
+            // ensureDock();
 
             window.__bobberyAudio = {{
               sync(p) {{
@@ -667,7 +670,7 @@ def render_audio_controller(
                 if (p.item_tooltips) {{
                   state.itemTooltips = p.item_tooltips;
                 }}
-                ensureDock();
+                // ensureDock();
                 if (p.scene_key && state.lastSceneKey && p.scene_key !== state.lastSceneKey) {{
                   triggerSceneFade();
                 }}

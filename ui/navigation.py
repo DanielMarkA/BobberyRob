@@ -17,7 +17,7 @@ RESULTS = "results"
 _MISSION_KEYS = (
     "game", "selected_item", "response_text", "send_error",
     "item_error", "move_error", "pending_response", "pending_item",
-    "pending_move", "pending_take_urn", "pending_voluntary_exit", "_mock_turn",
+    "pending_move", "pending_take_urn", "pending_voluntary_exit", "pending_escort", "_mock_turn",
 )
 
 

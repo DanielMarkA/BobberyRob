@@ -55,6 +55,7 @@ class InterrogationState:
     evidence_quotes: list[str] = field(default_factory=list)
     evidence_turn_ids: list[int] = field(default_factory=list)
     discrepancy_summary: str = ""
+    blocks_clearance: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -71,6 +72,7 @@ class InterrogationState:
             evidence_quotes=list(data.get("evidence_quotes", [])),
             evidence_turn_ids=list(data.get("evidence_turn_ids", [])),
             discrepancy_summary=data.get("discrepancy_summary", ""),
+            blocks_clearance=bool(data.get("blocks_clearance", False)),
         )
 
 
@@ -180,6 +182,10 @@ class GameState:
     active_dialogue: str = ""
     last_notice: Optional[str] = None
     auto_advance_to: Optional[str] = None
+    interrogation_dismissal: bool = False
+    authorization_route: Optional[str] = None  # "invitation" | "escort" | None
+    security_story_verified: bool = False
+    active_checks: dict[str, str] = field(default_factory=dict)
     penalties: list[PenaltyRecord] = field(default_factory=list)
     ended: bool = False
     ending_id: Optional[str] = None
@@ -227,6 +233,10 @@ class GameState:
             "active_dialogue": self.active_dialogue,
             "last_notice": self.last_notice,
             "auto_advance_to": self.auto_advance_to,
+            "interrogation_dismissal": self.interrogation_dismissal,
+            "authorization_route": self.authorization_route,
+            "security_story_verified": self.security_story_verified,
+            "active_checks": dict(self.active_checks),
             "penalties": [p.to_dict() for p in self.penalties],
             "ended": self.ended,
             "ending_id": self.ending_id,
@@ -269,6 +279,10 @@ class GameState:
             active_dialogue=data.get("active_dialogue", ""),
             last_notice=data.get("last_notice"),
             auto_advance_to=data.get("auto_advance_to"),
+            interrogation_dismissal=bool(data.get("interrogation_dismissal", False)),
+            authorization_route=data.get("authorization_route"),
+            security_story_verified=bool(data.get("security_story_verified", False)),
+            active_checks={str(k): str(v) for k, v in data.get("active_checks", {}).items()},
             penalties=[PenaltyRecord.from_dict(p) for p in data.get("penalties", [])],
             ended=bool(data.get("ended", False)),
             ending_id=data.get("ending_id"),

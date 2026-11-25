@@ -1797,9 +1797,17 @@ header[data-testid="stHeader"],
   pointer-events: none;
 }
 
-.checkpoint-portrait[src*="Last%20Guard.webp"] {
+.checkpoint-portrait[src*="Last%20Guard.webp"],
+.checkpoint-portrait[src*="Second%20Guard.webp"],
+.checkpoint-portrait[src*="Casual.webp"],
+.checkpoint-portrait[src*="casual.webp"] {
   inset-block-start: 6%;
   block-size: 92%;
+}
+
+.checkpoint-portrait[src*="interrogator.webp"] {
+  inset-block-start: 2%;
+  block-size: 125%;
 }
 
 .checkpoint-scrim {

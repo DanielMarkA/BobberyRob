@@ -1,9 +1,12 @@
 import html
+import logging
 
 import streamlit as st
 
 from ui.audio import queue_sfx
 from ui.data_provider import submit_response, take_gold_urn
+
+log = logging.getLogger(__name__)
 
 MAX_RESPONSE_CHARS = 500  # generic safety cap only; the backend owns real limits
 
@@ -58,6 +61,7 @@ def process_pending() -> bool:
         elif new_done > prev_done:
             queue_sfx("item_success")
     except Exception:
+        log.exception("Failed to process player response")
         # Restore the player's text on next fragment render so they can retry.
         st.session_state["send_error"] = "Could not send your response. Please try again."
         st.session_state["_restore_response_text"] = text
@@ -79,10 +83,6 @@ def render(game: dict, *, thinking_status: str | None = None) -> None:
     )
 
     interrogation = game.get("interrogation") or {}
-    evidence_quotes = interrogation.get("evidence_quotes") or []
-    evidence_note = (
-        f'On record: "{evidence_quotes[0]}"' if evidence_quotes else None
-    )
     personality = dialogue.get("personality")
     personality_pill = (
         f'<span class="checkpoint-personality-pill">{esc(personality)}</span>'
@@ -103,7 +103,6 @@ def render(game: dict, *, thinking_status: str | None = None) -> None:
             (st.session_state.get("send_error"), " error", "alert"),
             (st.session_state.get("item_error"), " error", "alert"),
             (st.session_state.get("move_error"), " error", "alert"),
-            (evidence_note, "", "status"),
             (game.get("notice") if not thinking_status else None, "", "status"),
         )
         if message

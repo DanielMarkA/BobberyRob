@@ -2,6 +2,7 @@
 
 from typing import Optional
 
+from game.dialogue_pools import pick_opening
 from game.state import GameState, MoveResult
 from scenario.loader import GuardDef, ObjectiveDef, RouteDef, ScenarioConfig
 
@@ -133,8 +134,9 @@ class RouteManager:
 
         guard = self.guard_for_location(target_location)
         loc_def = self._scenario.locations[target_location]
+        opening = pick_opening(guard.id, guard.opening_line)
         state.active_speaker = guard.name
-        state.active_dialogue = guard.opening_line
+        state.active_dialogue = opening
         state.consecutive_evasions = 0
         state.last_notice = f"Entered {loc_def.name}."
 
@@ -145,7 +147,7 @@ class RouteManager:
             target_location=target_location,
             current_location_after=target_location,
             notice=state.last_notice,
-            guard_opening_line=guard.opening_line,
+            guard_opening_line=opening,
         )
 
     def serialize_objectives(self, state: GameState) -> list[dict]:

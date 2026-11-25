@@ -7,16 +7,37 @@ exact replies; they are validated against the same schemas as real replies.
 """
 
 import copy
+import random
 from typing import Any, Optional
 
 from llm import prompts, schemas
 
-_MOCK_LINES: dict[str, str] = {
-    "casual": "Sure, sure. And what brings you in tonight?",
-    "strict": "State your business and your credentials.",
-    "observant": "Interesting. What time did you arrive, exactly?",
-    "experienced": "I've been here thirty years. Who sent you?",
-    "impatient": "Make it quick. What do you want?",
+_MOCK_LINES: dict[str, tuple[str, ...]] = {
+    "casual": (
+        "Sure, sure. And what brings you in tonight?",
+        "Got it. Who should I put down on the log, and what's your visit for?",
+        "Fair enough—mind telling me a bit more about your visit?",
+    ),
+    "strict": (
+        "State your business and your credentials.",
+        "Keep it formal. Give me your affiliation and why you're in this hall.",
+        "I need concrete details before you go any further.",
+    ),
+    "observant": (
+        "Interesting. Explain why you require restricted access and show your authorization.",
+        "Noted. Tell me what department authorized your restricted entry.",
+        "Let's check the logs—what brings you past security tonight?",
+    ),
+    "experienced": (
+        "I've been here thirty years. Who sent you?",
+        "Confirm your clearance for the archives—who signed off on your access?",
+        "Every curator here knows me. Explain your authorization.",
+    ),
+    "impatient": (
+        "Make it quick. What do you want?",
+        "We're locking down in minutes—confirm your clearance fast.",
+        "No time for small talk. State your business right now.",
+    ),
 }
 
 
@@ -63,7 +84,10 @@ class MockLLMClient:
         if item_line:
             return item_line
         personality = prompts.normalize_context(context)["guard"].get("personality", "")
-        return _MOCK_LINES.get(personality, schemas.FALLBACK_DIALOGUE)
+        pool = _MOCK_LINES.get(personality)
+        if pool:
+            return random.choice(pool)
+        return schemas.FALLBACK_DIALOGUE
 
     def evaluate_explanation(self, explanation: str, context: dict[str, Any]) -> dict[str, Any]:
         data = copy.deepcopy(self._evaluation) if self._evaluation is not None else {

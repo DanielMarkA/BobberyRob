@@ -170,7 +170,10 @@ def use_item(item_id: str) -> dict:
 def move_to_location(target_location: str) -> dict:
     """Validate and perform a location transition and return the updated UI state."""
     engine = _get_or_create_engine()
-    engine.move_to(target_location)
+    if target_location == "__return_to_floor__":
+        engine.finish_interrogation_dismissal()
+    else:
+        engine.move_to(target_location)
     return engine.get_ui_state()
 
 
@@ -186,6 +189,13 @@ def trigger_voluntary_exit() -> dict:
     engine = _get_or_create_engine()
     engine.trigger_voluntary_exit()
     _persist_if_ended(engine)
+    return engine.get_ui_state()
+
+
+def request_curator_escort() -> dict:
+    """Complete the in-museum curator escort authorization task at Security Checkpoint."""
+    engine = _get_or_create_engine()
+    engine.request_curator_escort()
     return engine.get_ui_state()
 
 

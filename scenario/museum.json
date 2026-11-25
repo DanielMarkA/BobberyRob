@@ -164,7 +164,7 @@
       "assigned_location": "museum_entrance",
       "opening_line": "Hey there! Welcome to the Grand Museum—just need your name and what brings you in tonight before you head through.",
       "style_note": "Laid-back, conversational tone; accepts plausible cover stories and logs basic visitor sign-in details.",
-      "portrait": "/app/static/images/casual.webp"
+      "portrait": "/app/static/images/Casual.webp?v=2"
     },
     {
       "id": "guard_strict",
@@ -174,7 +174,7 @@
       "assigned_location": "main_hall",
       "opening_line": "Halt. The main gallery is operating under strict perimeter surveillance tonight. State your credentials and business here.",
       "style_note": "Curt, formal, by-the-book; dismisses casual small talk, rejects bribes outright, and demands clear institutional details.",
-      "portrait": "/app/static/images/strict.webp"
+      "portrait": "/app/static/images/Second%20Guard.webp"
     },
     {
       "id": "guard_observant",
@@ -204,17 +204,17 @@
       "assigned_location": "vault_display",
       "opening_line": "Make it quick, we're locking down the urn vault in five minutes. Who cleared you for this chamber and why are you here?",
       "style_note": "Abrupt, hurried, easily agitated; cuts off rambling answers, double-checks earlier reports, and demands quick, consistent answers.",
-      "portrait": "/app/static/images/interrogator.webp"
+      "portrait": "/app/static/images/interrogator.webp?v=2"
     },
     {
       "id": "guard_exit",
-      "name": "Captain Reyes",
+      "name": "Captain Jun",
       "role": "Exit Shift Commander",
       "personality": "observant",
       "assigned_location": "museum_exit",
       "opening_line": "Hold on—we're closing the doors. You're leaving late and carrying a heavy satchel. Remind me of your name, your role here, and why you stayed past closing.",
       "style_note": "Sharp, composed exit commander doing final departure sweeps; cross-checks the visitor's entire story against earlier checkpoint logs before unlocking the exit.",
-      "portrait": "/app/static/images/Last%20Guard.webp"
+      "portrait": "/app/static/images/Last%20Guard.webp?v=2"
     }
   ],
   "items": [

@@ -341,13 +341,13 @@ class TestIdentityMemoryAndContradictions(unittest.TestCase):
         self.assertEqual(r2.suspicion_delta, 15)  # 2nd consecutive non-answer -> +15 suspicion!
         self.assertEqual(engine.state.guard_confirmations_count.get("guard_casual", 0), 0)
 
-        # Confirmation requirements scale cleanly with suspicion tiers
+        # Confirmation requirements scale cleanly with room security & suspicion tiers
         engine.state.suspicion = 10
         self.assertEqual(engine.required_confirmations_for("museum_entrance", "guard_casual"), 1)
         engine.state.suspicion = 25
         self.assertEqual(engine.required_confirmations_for("museum_entrance", "guard_casual"), 2)
         engine.state.suspicion = 45
-        self.assertEqual(engine.required_confirmations_for("main_hall", "guard_strict"), 3)
+        self.assertEqual(engine.required_confirmations_for("main_hall", "guard_strict"), 4)
 
     def test_blind_verification_hides_prior_answers_and_rejects_bare_yes_no(self) -> None:
         llm = ScriptedLLMClient(
@@ -575,12 +575,16 @@ class TestFullPlaythroughsAndEndings(unittest.TestCase):
                 _analysis(claims=[{"slot": "name", "value": "Dr. Vance", "status": "asserted", "corrects_claim_id": None}]),
                 _analysis(claims=[{"slot": "reason_for_visit", "value": "Gala curator review", "status": "asserted", "corrects_claim_id": None}]),
                 _analysis(claims=[{"slot": "employer", "value": "Cambridge Antiquities Trust", "status": "asserted", "corrects_claim_id": None}]),
+                _analysis(claims=[{"slot": "occupation", "value": "senior antiquities researcher", "status": "asserted", "corrects_claim_id": None}]),
                 _analysis(claims=[{"slot": "other", "value": "Department of Antiquities", "status": "asserted", "corrects_claim_id": None}]),
                 _analysis(claims=[{"slot": "relationships", "value": "Director Thornton", "status": "asserted", "corrects_claim_id": None}]),
                 _analysis(claims=[{"slot": "hometown", "value": "Cambridge", "status": "asserted", "corrects_claim_id": None}]),
+                _analysis(claims=[{"slot": "other", "value": "reviewing archival ledgers", "status": "asserted", "corrects_claim_id": None}]),
                 _analysis(claims=[{"slot": "other", "value": "cataloging the gold urn", "status": "asserted", "corrects_claim_id": None}]),
+                _analysis(claims=[{"slot": "other", "value": "scheduled before lockdown", "status": "asserted", "corrects_claim_id": None}]),
                 _analysis(claims=[{"slot": "other", "value": "leaving after cataloging", "status": "asserted", "corrects_claim_id": None}]),
                 _analysis(claims=[{"slot": "other", "value": "carrying research notes", "status": "asserted", "corrects_claim_id": None}]),
+                _analysis(claims=[{"slot": "other", "value": "satchel contains archival calipers", "status": "asserted", "corrects_claim_id": None}]),
             ]
         )
         engine = GameEngine(scenario=self.scenario, llm_client=llm, clock=lambda: now[0])
@@ -590,15 +594,16 @@ class TestFullPlaythroughsAndEndings(unittest.TestCase):
         self.assertEqual(r1.auto_advance_to, "main_hall")
         self.assertTrue(engine.move_to("main_hall").transition_allowed)
 
-        # 2. Main Hall: 2 consistent exchanges clear reach_main_hall
+        # 2. Main Hall: 3 consistent exchanges clear reach_main_hall
         engine.submit_message("Here for the gala curator review.")
+        engine.submit_message("I represent the Cambridge Antiquities Trust.")
         self.assertNotIn("reach_main_hall", engine.state.completed_objectives)
-        r_mh2 = engine.submit_message("I represent the Cambridge Antiquities Trust.")
+        r_mh3 = engine.submit_message("I'm a senior antiquities researcher.")
         self.assertIn("reach_main_hall", engine.state.completed_objectives)
-        self.assertEqual(r_mh2.auto_advance_to, "security_checkpoint")
+        self.assertEqual(r_mh3.auto_advance_to, "security_checkpoint")
         self.assertTrue(engine.move_to("security_checkpoint").transition_allowed)
 
-        # 3. Security Checkpoint: Invitation Letter supports cover (-10 susp, does NOT auto-unlock!),
+        # 3. Security Checkpoint: Invitation Letter supports cover & grants restricted authorization,
         #    then 1 consistent dialogue turn clears pass_security and grants Access Card
         r_inv = engine.use_item("invitation_letter")
         self.assertTrue(r_inv.success)
@@ -609,26 +614,29 @@ class TestFullPlaythroughsAndEndings(unittest.TestCase):
         self.assertEqual(r_sc.auto_advance_to, "restricted_area")
         self.assertTrue(engine.move_to("restricted_area").transition_allowed)
 
-        # 4. Restricted Area: 2 consistent exchanges clear reach_restricted_area
+        # 4. Restricted Area: 3 consistent exchanges clear reach_restricted_area
         engine.submit_message("Director Thornton signed my pass.")
+        engine.submit_message("I flew in from Cambridge this morning.")
         self.assertNotIn("reach_restricted_area", engine.state.completed_objectives)
-        r_ra2 = engine.submit_message("I flew in from Cambridge this morning.")
+        r_ra3 = engine.submit_message("I'm reviewing the archival ledgers before closing.")
         self.assertIn("reach_restricted_area", engine.state.completed_objectives)
-        self.assertEqual(r_ra2.auto_advance_to, "vault_display")
+        self.assertEqual(r_ra3.auto_advance_to, "vault_display")
         self.assertTrue(engine.move_to("vault_display").transition_allowed)
 
-        # 5. Vault Display: Access Card supports cover, 1 consistent exchange clears Officer Gomez,
+        # 5. Vault Display: Access Card supports cover (reduces 3 -> 2), 2 consistent exchanges clear Officer Gomez,
         #    unlocking "Take the Gold Urn" (mission does NOT end yet!)
         r_card = engine.use_item("access_card")
         self.assertTrue(r_card.success)
         self.assertFalse(engine.can_take_urn)
-        r_vault = engine.submit_message("Here to finish cataloging the gold urn before lockdown.")
+        engine.submit_message("Here to finish cataloging the gold urn before lockdown.")
+        self.assertFalse(engine.can_take_urn)
+        r_vault = engine.submit_message("My inspection was scheduled before the vault lockdown.")
         self.assertIn("clear_vault_guard", engine.state.completed_objectives)
         self.assertIsNone(r_vault.auto_advance_to)
         self.assertTrue(engine.can_take_urn)
         self.assertFalse(engine.state.ended)
 
-        # 6. Take the Gold Urn -> swaps to empty vault scene & auto-advances to final escape encounter!
+        # 6. Take the Gold Urn -> swaps to empty vault scene, adds +15 sensor heat, & auto-advances to exit!
         urn_res = engine.take_gold_urn()
         self.assertTrue(urn_res["ok"])
         self.assertIn("take_gold_urn", engine.state.completed_objectives)
@@ -637,11 +645,12 @@ class TestFullPlaythroughsAndEndings(unittest.TestCase):
         self.assertFalse(engine.state.ended)
         self.assertTrue(engine.move_to("museum_exit").transition_allowed)
 
-        # 7. Final Escape Encounter (Captain Reyes): 2 exchanges -> escapes with Gold Urn -> Perfect Infiltration!
+        # 7. Final Escape Encounter (Captain Reyes): 3 exchanges -> escapes with Gold Urn -> Perfect Infiltration!
         engine.submit_message("Finishing up my cataloging work before closing.")
+        engine.submit_message("Just carrying my research notes and instruments.")
         self.assertFalse(engine.state.ended)
         now[0] = 245.5
-        r_esc = engine.submit_message("Just carrying my research notes and instruments.")
+        r_esc = engine.submit_message("The satchel just holds my archival calipers and paperwork.")
         self.assertTrue(r_esc.ended)
         self.assertEqual(engine.state.ending_id, "perfect_infiltration")
 
@@ -861,6 +870,266 @@ class TestDatabasePersistence(unittest.TestCase):
         self.assertEqual(len(board), 2)
         self.assertEqual(board[0], {"rank": 1, "player": "Phantom", "time_seconds": 140})
         self.assertEqual(board[1], {"rank": 2, "player": "Spectre", "time_seconds": 180})
+
+
+class TestHostileAndIncriminatingAdmissions(unittest.TestCase):
+    def setUp(self) -> None:
+        self.scenario = load_scenario()
+
+    def test_theft_confession_blocks_clearance_and_triggers_interrogation(self) -> None:
+        llm = ScriptedLLMClient(
+            analyses=[
+                {
+                    "classification": "claim",
+                    "claims": [
+                        {
+                            "slot": "reason_for_visit",
+                            "value": "steal the Golden Urn",
+                            "status": "asserted",
+                            "corrects_claim_id": None,
+                        }
+                    ],
+                    "contradictions": [],
+                    "evidence_turns": [],
+                    "item_use_intent": None,
+                    "recommended_action": "none",
+                }
+            ]
+        )
+        engine = GameEngine(scenario=self.scenario, llm_client=llm)
+        start_susp = engine.state.suspicion
+        result = engine.submit_message("I'm going to steal the Golden Urn.")
+
+        self.assertEqual(result.status, "interrogation")
+        self.assertTrue(engine.state.interrogation.active)
+        self.assertEqual(engine.state.suspicion, start_susp + 45)
+        self.assertEqual(engine.state.current_location, "museum_entrance")
+        self.assertIsNone(engine.state.auto_advance_to)
+        self.assertNotIn("guard_casual", engine.state.cleared_guards)
+
+    def test_terrorist_threat_triggers_interrogation_and_blocks_clearance(self) -> None:
+        llm = ScriptedLLMClient(
+            analyses=[
+                {
+                    "classification": "claim",
+                    "claims": [
+                        {
+                            "slot": "occupation",
+                            "value": "terrorist",
+                            "status": "asserted",
+                            "corrects_claim_id": None,
+                        }
+                    ],
+                    "contradictions": [],
+                    "evidence_turns": [],
+                    "item_use_intent": None,
+                    "recommended_action": "none",
+                }
+            ]
+        )
+        engine = GameEngine(scenario=self.scenario, llm_client=llm)
+        start_susp = engine.state.suspicion
+        result = engine.submit_message("I'm a terrorist.")
+
+        self.assertEqual(result.status, "interrogation")
+        self.assertTrue(engine.state.interrogation.active)
+        self.assertEqual(engine.state.suspicion, start_susp + 45)
+        self.assertNotIn("guard_casual", engine.state.cleared_guards)
+        # Hostile outburst must NOT be saved as an asserted occupation claim (so a real cover later isn't a contradiction)
+        self.assertEqual(engine.memory.claims_in_slot("occupation"), [])
+
+    def test_llm_recommended_start_interrogation_without_keywords_blocks_clearance(self) -> None:
+        llm = ScriptedLLMClient(
+            analyses=[
+                {
+                    "classification": "claim",
+                    "claims": [
+                        {
+                            "slot": "reason_for_visit",
+                            "value": "disable the alarms at midnight",
+                            "status": "asserted",
+                            "corrects_claim_id": None,
+                        }
+                    ],
+                    "contradictions": [],
+                    "evidence_turns": [],
+                    "item_use_intent": None,
+                    "recommended_action": "start_interrogation",
+                }
+            ]
+        )
+        engine = GameEngine(scenario=self.scenario, llm_client=llm)
+        result = engine.submit_message("I'm here to disable the alarms at midnight.")
+
+        self.assertEqual(result.status, "interrogation")
+        self.assertTrue(engine.state.interrogation.active)
+        self.assertNotIn("guard_casual", engine.state.cleared_guards)
+
+    def test_repeating_confession_during_interrogation_is_forced_unconvincing(self) -> None:
+        llm = ScriptedLLMClient(
+            analyses=[
+                {
+                    "classification": "claim",
+                    "claims": [],
+                    "contradictions": [],
+                    "evidence_turns": [],
+                    "item_use_intent": None,
+                    "recommended_action": "none",
+                }
+            ],
+            evaluations=[
+                {
+                    "evaluation": "convincing",
+                    "reason": "Mock would say convincing, but engine must override.",
+                    "evidence_turns": [],
+                }
+            ],
+        )
+        engine = GameEngine(scenario=self.scenario, llm_client=llm)
+        engine.submit_message("I'm going to steal the Golden Urn.")
+        self.assertTrue(engine.state.interrogation.active)
+
+        susp_before = engine.state.suspicion
+        follow_up = engine.submit_message("Seriously, I'm here to rob this museum.")
+        self.assertGreater(engine.state.suspicion, susp_before)
+        self.assertNotIn("guard_casual", engine.state.cleared_guards)
+        self.assertIn(follow_up.status, ("interrogation", "ended"))
+
+    def test_denial_and_question_about_theft_do_not_trigger_alert(self) -> None:
+        from game.engine import detect_hostile_or_incriminating
+
+        self.assertIsNone(detect_hostile_or_incriminating("I'm not here to steal anything."))
+        self.assertIsNone(detect_hostile_or_incriminating("I would never steal the Gold Urn."))
+        self.assertIsNone(detect_hostile_or_incriminating("Did someone try to steal the Gold Urn?"))
+        self.assertIsNotNone(detect_hostile_or_incriminating("I'm going to steal the Gold Urn."))
+
+    def test_resolving_theft_interrogation_does_not_grant_clearance(self) -> None:
+        llm = ScriptedLLMClient(
+            analyses=[
+                _analysis(claims=[{"slot": "reason_for_visit", "value": "steal the Gold Urn", "status": "asserted", "corrects_claim_id": None}]),
+            ],
+            evaluations=[
+                {"evaluation": "convincing", "reason": "Visitor apologized for a poor joke.", "evidence_turns": []},
+            ],
+        )
+        engine = GameEngine(scenario=self.scenario, llm_client=llm)
+        engine.submit_message("I'm going to steal the Gold Urn.")
+        self.assertTrue(engine.state.interrogation.active)
+        self.assertTrue(engine.state.interrogation.blocks_clearance)
+
+        res = engine.submit_message("That was a terrible joke, I am Dr. Vance from Oxford here for archive research.")
+        self.assertFalse(engine.state.interrogation.active)
+        self.assertNotIn("guard_casual", engine.state.cleared_guards)
+        self.assertNotIn("enter_museum", engine.state.completed_objectives)
+        self.assertEqual(res.auto_advance_to, "__return_to_floor__")
+
+    def test_security_checkpoint_requires_authorization_route(self) -> None:
+        llm = ScriptedLLMClient(
+            analyses=[
+                _analysis(claims=[{"slot": "name", "value": "Dr. Vance", "status": "asserted", "corrects_claim_id": None}]),
+                _analysis(claims=[{"slot": "employer", "value": "Oxford", "status": "asserted", "corrects_claim_id": None}]),
+                _analysis(claims=[{"slot": "occupation", "value": "historian", "status": "asserted", "corrects_claim_id": None}]),
+                _analysis(claims=[{"slot": "hometown", "value": "London", "status": "asserted", "corrects_claim_id": None}]),
+                _analysis(claims=[{"slot": "reason_for_visit", "value": "inspecting restricted manuscripts", "status": "asserted", "corrects_claim_id": None}]),
+                _analysis(claims=[{"slot": "other", "value": "approved by curator department", "status": "asserted", "corrects_claim_id": None}]),
+            ]
+        )
+        engine = GameEngine(scenario=self.scenario, llm_client=llm)
+        engine.submit_message("I'm Dr. Vance.")
+        engine.move_to("main_hall")
+        engine.submit_message("I work at Oxford.")
+        engine.submit_message("I am an art historian.")
+        engine.submit_message("I'm based in London.")
+        engine.move_to("security_checkpoint")
+
+        # Even with 2 valid dialogue turns, route stays locked without invitation or curator escort
+        engine.submit_message("I need restricted access to inspect manuscripts.")
+        r2 = engine.submit_message("My department approved this archival review.")
+        self.assertTrue(engine.state.security_story_verified)
+        self.assertIsNone(engine.state.authorization_route)
+        self.assertNotIn("pass_security", engine.state.completed_objectives)
+        self.assertFalse(engine.move_to("restricted_area").transition_allowed)
+        self.assertIn("authorization", (r2.notice or "").lower())
+
+        # Route B: Night Curator Escort (+25s) immediately unlocks restricted_area since story verified!
+        escort_res = engine.request_curator_escort()
+        self.assertTrue(escort_res["ok"])
+        self.assertEqual(engine.state.authorization_route, "escort")
+        self.assertIn("pass_security", engine.state.completed_objectives)
+        self.assertEqual(engine.state.inventory["access_card"], 1)
+        self.assertTrue(any(p.seconds == 25 for p in engine.state.penalties))
+
+    def test_exit_rejects_repeating_only_name_and_institution(self) -> None:
+        llm = ScriptedLLMClient(
+            analyses=[
+                _analysis(claims=[{"slot": "name", "value": "Dr. Vance", "status": "asserted", "corrects_claim_id": None}]),
+                _analysis(claims=[{"slot": "other", "value": "carrying cataloged research satchel", "status": "asserted", "corrects_claim_id": None}]),
+            ]
+        )
+        engine = GameEngine(scenario=self.scenario, llm_client=llm)
+        engine.state.current_location = "museum_exit"
+        engine.state.urn_taken = True
+        engine.state.authorization_route = "escort"
+        engine.state.completed_objectives.append("take_gold_urn")
+
+        # Repeating only name & institution does NOT advance exit clearance
+        r1 = engine.submit_message("I am Dr. Vance from Oxford.")
+        self.assertEqual(r1.status, "clarification_requested")
+        self.assertEqual(engine.state.guard_confirmations_count.get("guard_exit", 0), 0)
+
+        # Accounting for what they are carrying DOES count
+        r2 = engine.submit_message("I am carrying my research satchel after finishing my escort log.")
+        self.assertEqual(engine.state.guard_confirmations_count.get("guard_exit", 0), 1)
+        self.assertEqual(r2.status, "ok")
+
+    def test_ai_outage_fallback_is_neutral_and_preserves_attempts(self) -> None:
+        class OutageLLM(MockLLMClient):
+            def analyze(self, player_message: str, context: dict[str, Any]) -> dict[str, Any]:
+                return {
+                    "classification": "non-claim",
+                    "claims": [],
+                    "contradictions": [],
+                    "evidence_turns": [],
+                    "item_use_intent": None,
+                    "recommended_action": "none",
+                    "fallback": True,
+                }
+
+            def evaluate_explanation(self, explanation: str, context: dict[str, Any]) -> dict[str, Any]:
+                return {
+                    "evaluation": "partially_convincing",
+                    "reason": "Evaluation unavailable.",
+                    "evidence_turns": [],
+                    "fallback": True,
+                }
+
+        engine = GameEngine(scenario=self.scenario, llm_client=OutageLLM())
+        r1 = engine.submit_message("I'm Dr. Vance.")
+        r2 = engine.submit_message("I'm Dr. Vance from Oxford.")
+        # Neither outage turn adds suspicion or evasion
+        self.assertEqual(r1.suspicion_delta, 0)
+        self.assertEqual(r2.suspicion_delta, 0)
+        self.assertEqual(engine.state.consecutive_evasions, 0)
+
+        # During interrogation, outage does NOT spend an attempt or change suspicion
+        engine.interrogation.trigger_interrogation(engine.state, in_room=True, memory=engine.memory)
+        susp_before = engine.state.suspicion
+        r3 = engine.submit_message("Here is my explanation.")
+        self.assertEqual(r3.suspicion_delta, 0)
+        self.assertEqual(engine.state.suspicion, susp_before)
+        self.assertEqual(engine.state.interrogation.attempts_used, 0)
+        self.assertTrue(engine.state.interrogation.active)
+
+    def test_off_topic_classification_does_not_raise_unbound_local_error(self) -> None:
+        llm = ScriptedLLMClient(
+            analyses=[
+                _analysis(classification="off_topic", recommended_action="ask_followup"),
+            ]
+        )
+        engine = GameEngine(scenario=self.scenario, llm_client=llm)
+        result = engine.submit_message("Nice weather we're having outside.")
+        self.assertEqual(result.status, "ok")
+        self.assertEqual(result.suspicion_delta, 0)
 
 
 class TestArchitectureBoundaries(unittest.TestCase):

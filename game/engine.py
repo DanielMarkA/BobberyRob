@@ -4,6 +4,11 @@ import re
 import time
 from typing import Any, Callable, Optional
 
+from game.dialogue_pools import (
+    pick_item_reaction,
+    pick_neutral_fallback,
+    pick_opening,
+)
 from game.endings import EndingEvaluator
 from game.interrogation import (
     INTERROGATION_SCENE_IMAGE,
@@ -118,6 +123,99 @@ def is_prompt_injection(text: str) -> bool:
     if not cleaned:
         return False
     return any(pattern.search(cleaned) for pattern in _PROMPT_INJECTION_PATTERNS)
+
+
+# Deterministic detector for overt heist confessions, forgery admissions, and hostile threats.
+_HOSTILE_OR_INCRIMINATING_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
+    (
+        re.compile(
+            r"\b(?:terrorist|terrorism|bomb|explosive|c4|dynamite|blow\s+(?:this\s+place|the\s+museum|it)\s+up|"
+            r"hostage|mass\s+shooting|shoot\s+(?:you|everyone|the\s+guards?)|"
+            r"i\s+have\s+a\s+(?:gun|bomb|weapon|knife|explosive)|"
+            r"going\s+to\s+(?:kill|murder|shoot|attack|bomb))\b",
+            re.IGNORECASE,
+        ),
+        "Visitor made a violent or terrorist threat.",
+    ),
+    (
+        re.compile(
+            r"\b(?:(?:going\s+to|here\s+to|plan(?:ning)?\s+to|want\s+to|trying\s+to|about\s+to|came\s+(?:here\s+)?to)\s+"
+            r"(?:steal|rob|heist|loot|swipe|snatch|take|pinch|burglarize|grab)\b.*?"
+            r"\b(?:urn|artifact|relic|museum|vault|gold|golden|astrolabe|display|treasure|it)\b|"
+            r"(?:steal|grab|take|give\s+me|hand\s+over)\s+the\s+(?:aurelian\s+)?(?:gold(?:en)?\s+)?(?:urn|artifact|relic|treasure)|"
+            r"rob\s+(?:this|the)\s+museum|"
+            r"(?:disable|bypass|hack|cut)\s+(?:the\s+)?(?:alarms?|cameras?|security|locks?|sensors?)|"
+            r"break\s+into\s+the\s+(?:vault|museum|restricted\s+(?:area|wing))|"
+            r"i'?m\s+(?:a\s+|an\s+)?(?:thief|burglar|robber|heist\s+crew|criminal|con\s*artist|infiltrator|spy))\b",
+            re.IGNORECASE,
+        ),
+        "Visitor openly confessed to intending theft or infiltration.",
+    ),
+    (
+        re.compile(
+            r"\b(?:my\s+(?:passport|id|invitation|badge|card|credentials?|cover\s+story)\s+is\s+"
+            r"(?:fake|forged|counterfeit|phony|stolen|made\s+up)|"
+            r"i\s+(?:forged|faked|stole)\s+(?:this|my)\s+(?:passport|id|invitation|badge|card|credentials?)|"
+            r"i'?m\s+(?:trespassing|breaking\s+in(?:to)?|sneaking\s+in(?:to)?))\b",
+            re.IGNORECASE,
+        ),
+        "Visitor admitted to forged credentials or unlawful entry.",
+    ),
+)
+
+
+_NEGATION_OR_QUESTION_PREFIX = re.compile(
+    r"\b(?:not|never|don't|do\s+not|didn't|did\s+not|wouldn't|would\s+not|won't|will\s+not|"
+    r"aren't|isn't|no\s+intention\s+(?:of|to)|nothing\s+to\s+do\s+with|"
+    r"did\s+someone|has\s+anyone|is\s+someone|are\s+you\s+worried|who\s+tried|why\s+would\s+i)\b",
+    re.IGNORECASE,
+)
+
+
+def detect_hostile_or_incriminating(text: str) -> Optional[str]:
+    """Return a security alert reason if the player makes an overt threat or confession.
+
+    Judges meaning rather than raw keywords: explicit denials ("I'm not here to steal
+    anything") and security questions ("Did someone try to steal it?") are NOT flagged.
+    """
+    cleaned = (text or "").strip()
+    if not cleaned:
+        return None
+    for pattern, reason in _HOSTILE_OR_INCRIMINATING_PATTERNS:
+        match = pattern.search(cleaned)
+        if not match:
+            continue
+        # Inspect a window before the match for explicit negation or question framing
+        prefix_window = cleaned[max(0, match.start() - 45) : match.start()]
+        if _NEGATION_OR_QUESTION_PREFIX.search(prefix_window):
+            continue
+        # Pure question about security without first-person declaration ("Did someone steal the urn?")
+        if cleaned.endswith("?") and not re.search(
+            r"\b(?:i'm|i\s+am|i\s+will|i'll|i\s+have|i\s+plan|i\s+came|my)\b",
+            cleaned[: match.end()],
+            re.IGNORECASE,
+        ):
+            continue
+        return reason
+    return None
+
+
+_EXIT_PACKAGE_PATTERN = re.compile(
+    r"\b(?:urn|satchel|bag|case|package|box|parcel|notes|papers|documents|instruments|"
+    r"carrying|carry|taking|transport|transporting|catalog|cataloging|cataloguing|"
+    r"research|archive|archives|leaving|depart|departure|escort|invitation|artifact|relic|folder|briefcase)\b",
+    re.IGNORECASE,
+)
+
+
+def _accounts_for_exit_package(player_text: str, claims_recorded: list[dict[str, Any]]) -> bool:
+    """At the exit, the player must account for what they are carrying/leaving with."""
+    if _EXIT_PACKAGE_PATTERN.search(player_text or ""):
+        return True
+    for claim in claims_recorded:
+        if claim.get("slot") in ("other", "reason_for_visit"):
+            return True
+    return False
 
 
 _BARE_YES_NO_PATTERN = re.compile(
@@ -443,6 +541,7 @@ class GameEngine:
             )
         self.state.last_notice = None
         self.state.auto_advance_to = None
+        self.state.interrogation_dismissal = False
 
         # 2. Branch: explanation evaluation (interrogation room or pending discrepancy)
         if self.interrogation.is_awaiting_explanation(self.state):
@@ -475,6 +574,7 @@ class GameEngine:
         """
         guard = self.active_guard
         self.state.auto_advance_to = None
+        self.state.interrogation_dismissal = False
 
         if self.state.ended or self.state.prompt_injection_detected:
             return ItemUseResult(
@@ -540,6 +640,12 @@ class GameEngine:
         elif result.outcome in ("success", "partial_success"):
             if result.outcome == "success" and guard.id not in self.state.guard_cover_supported:
                 self.state.guard_cover_supported.append(guard.id)
+            if (
+                result.outcome == "success"
+                and item_id == "invitation_letter"
+                and self.state.current_location == "security_checkpoint"
+            ):
+                self.state.authorization_route = "invitation"
             self.memory.add_report(
                 source_turn=player_turn.turn_id,
                 summary=f"Visitor presented {item_name} to {guard.name} ({result.outcome}).",
@@ -549,16 +655,31 @@ class GameEngine:
                 self.state.interrogation.active = False
                 self.state.interrogation.pending_contradiction_id = None
 
+        spoken_reaction = pick_item_reaction(item_id, guard.id, result.dialogue)
+        result.dialogue = spoken_reaction
         self.state.active_speaker = guard.name
-        self.state.active_dialogue = result.dialogue
+        self.state.active_dialogue = spoken_reaction
         self.state.last_notice = result.notice
 
         self.memory.add_turn(
             speaker="guard",
-            text=result.dialogue,
+            text=spoken_reaction,
             guard_id=guard.id,
             location_id=self.state.current_location,
         )
+
+        # If security story was already verified and this item just granted authorization, clear security!
+        if (
+            self.state.current_location == "security_checkpoint"
+            and self.state.security_story_verified
+            and self.state.authorization_route is not None
+            and not self.state.interrogation.active
+        ):
+            self._evaluate_location_clearance(
+                guard=guard,
+                substantive_turn=True,
+                had_contradiction=False,
+            )
 
         # Counterfeit detection, wrong-guard bribery, or suspicion=100 -> Interrogation Room!
         if self.suspicion.is_final_interrogation(self.state.suspicion):
@@ -591,13 +712,18 @@ class GameEngine:
 
         self.state.urn_taken = True
         self.routes.complete_objective(self.state, "take_gold_urn")
+        # Stealing the Gold Urn trips a subtle vault pedestal sensor (+15 suspicion)
+        # so the Exit guard is on heightened alert during your escape.
+        new_susp, applied = self.suspicion.apply_delta(self.state.suspicion, 15)
+        self.state.suspicion = new_susp
         self.state.active_dialogue = (
             "The pressurized glass case lifts silently. You slip the Aurelian Gold Urn "
-            "into your satchel — now get past the final exit checkpoint!"
+            "into your satchel — a faint perimeter sensor chimes as you head for the exit!"
         )
         self.state.active_speaker = "Vault Sanctum"
         self.state.last_notice = (
-            "Gold Urn secured! Heading to the Exit Checkpoint for your final escape..."
+            f"Gold Urn secured! Vault sensor raised security alert (+{applied} suspicion). "
+            "Heading to the Exit Checkpoint..."
         )
         self.state.auto_advance_to = "museum_exit"
 
@@ -610,7 +736,21 @@ class GameEngine:
     def move_to(self, target_location: str) -> MoveResult:
         """Attempt to transition to `target_location` through backend route validation."""
         self.state.auto_advance_to = None
+        self.state.interrogation_dismissal = False
         return self.routes.move_to(self.state, target_location)
+
+    def finish_interrogation_dismissal(self) -> None:
+        """Transition smoothly from the Chief Investigator's dismissal back to the checkpoint floor."""
+        self.state.auto_advance_to = None
+        self.state.interrogation_dismissal = False
+        guard = self.routes.guard_for_location(self.state.current_location)
+        loc = self.scenario.locations[self.state.current_location]
+        self.state.active_speaker = guard.name
+        self.state.active_dialogue = (
+            f"Back from interrogation, I see. Let's pick up where we left off — "
+            f"give me a straight answer before I decide whether to clear you."
+        )
+        self.state.last_notice = f"Returned to {loc.name}."
 
     def trigger_voluntary_exit(self) -> Optional[EndingDef]:
         """Trigger the Alternate Ending if the player meets its conditions."""
@@ -619,6 +759,65 @@ class GameEngine:
             return None
         self.state.voluntary_exit = True
         return self._check_and_finalize_ending()
+
+    def request_curator_escort(self) -> dict[str, Any]:
+        """In-museum authorization route at Security Checkpoint: log a night curator escort (+25s)."""
+        if self.state.ended or self.state.prompt_injection_detected:
+            return {"ok": False, "notice": "The mission has already concluded."}
+        if self.state.interrogation.active:
+            return {"ok": False, "notice": "Complete security questioning before requesting an escort."}
+        if self.state.current_location != "security_checkpoint":
+            return {"ok": False, "notice": "Curator escorts are only logged at the Security Checkpoint."}
+        if self.state.authorization_route is not None:
+            return {"ok": False, "notice": "You already have restricted authorization logged."}
+
+        guard = self.routes.guard_for_location("security_checkpoint")
+        self.state.authorization_route = "escort"
+        if guard.id not in self.state.guard_cover_supported:
+            self.state.guard_cover_supported.append(guard.id)
+        self.state.penalties.append(
+            PenaltyRecord(label="Curator Escort Log Delay", seconds=25)
+        )
+        turn = self.memory.add_turn(
+            speaker="player",
+            text="[Signed the Night Curator Escort Log at Security Checkpoint]",
+            guard_id=guard.id,
+            location_id="security_checkpoint",
+        )
+        self.memory.add_report(
+            source_turn=turn.turn_id,
+            summary="Visitor obtained temporary restricted authorization via the Night Curator Escort Log.",
+            shared_with=[],
+        )
+
+        if self.state.security_story_verified:
+            self._evaluate_location_clearance(
+                guard=guard,
+                substantive_turn=True,
+                had_contradiction=False,
+            )
+            reply = (
+                "Escort log verified—and your explanation checks out. Take this temporary Access Card "
+                "and head into the Restricted Collection Area."
+            )
+        else:
+            reply = (
+                "Alright, I've logged your Night Curator Escort request. Before I issue your Access Card, "
+                "explain clearly why your visit requires restricted access tonight."
+            )
+            self.state.last_notice = (
+                "Curator escort authorized (+25s). Now explain why your visit requires restricted access."
+            )
+
+        self.state.active_speaker = guard.name
+        self.state.active_dialogue = reply
+        self.memory.add_turn(
+            speaker="guard",
+            text=reply,
+            guard_id=guard.id,
+            location_id="security_checkpoint",
+        )
+        return {"ok": True, "notice": self.state.last_notice}
 
     def apply_suspicion_event(self, event_name: str) -> int:
         """Apply a named suspicion event directly and enforce threshold side effects."""
@@ -657,6 +856,33 @@ class GameEngine:
         susp_before: int,
     ) -> TurnResult:
         analysis = self.llm.analyze(player_text, context)
+        if analysis.get("fallback"):
+            # AI outages must be 100% neutral: retry same check with 0 suspicion/evasion penalty.
+            reply = pick_neutral_fallback()
+            self.state.active_speaker = guard.name
+            self.state.active_dialogue = reply
+            self.state.last_notice = "Security radio glitched — please repeat your answer (no penalty)."
+            self.memory.add_turn(
+                speaker="guard",
+                text=reply,
+                guard_id=guard.id,
+                location_id=self.state.current_location,
+            )
+            return TurnResult(
+                status="ok",
+                guard_id=guard.id,
+                guard_name=guard.name,
+                dialogue=reply,
+                suspicion_before=susp_before,
+                suspicion_after=self.state.suspicion,
+                suspicion_delta=0,
+                suspicion_label=self.suspicion.label_for(self.state.suspicion),
+                notice=self.state.last_notice,
+                interrogation_active=self.state.interrogation.active,
+                interrogation_is_final=self.state.interrogation.is_final,
+                ended=self.state.ended,
+                ending_id=self.state.ending_id,
+            )
         classification = analysis.get("classification", "non-claim")
         recommended = analysis.get("recommended_action", "none")
 
@@ -664,6 +890,7 @@ class GameEngine:
         corrections_recorded: list[dict[str, Any]] = []
         contradictions_flagged: list[dict[str, Any]] = []
         promoted_contradictions: list[dict[str, Any]] = []
+        false_action_reason: Optional[str] = None
         item_result_obj: Optional[ItemUseResult] = None
         outcome_facts: list[str] = []
         event_name = "player_spoke"
@@ -714,7 +941,28 @@ class GameEngine:
             has_ambiguous = False
             has_asserted_identity = False
 
-            for raw_claim in analysis.get("claims", []):
+            # Track claims already told to THIS guard so repeating the exact same answer
+            # cannot be farmed for free clearance.
+            guard_prior_view = self.memory.guard_view(guard.id)
+            prior_guard_claims: set[tuple[str, str]] = {
+                (c.slot, re.sub(r"\s+", " ", (c.value or "").strip().lower()))
+                for c in guard_prior_view["claims"]
+                if c.status != "corrected"
+            }
+            new_info_for_guard = False
+
+            # Check for overt heist confessions / threats BEFORE recording identity claims
+            # so a security outburst (e.g., "I'm a terrorist") is logged as a security incident,
+            # never stored as an official identity claim to contradict a later cover story.
+            hostile_reason = detect_hostile_or_incriminating(player_text)
+            if (
+                not hostile_reason
+                and recommended == "start_interrogation"
+                and not analysis.get("contradictions")
+            ):
+                hostile_reason = "Visitor made a severely suspicious or incriminating statement."
+
+            for raw_claim in ([] if hostile_reason else analysis.get("claims", [])):
                 slot = raw_claim["slot"]
                 value = (raw_claim.get("value") or "").strip()
                 claim_status = raw_claim.get("status", "asserted")
@@ -766,6 +1014,9 @@ class GameEngine:
                     status=claim_status,
                 )
                 claims_recorded.append(new_claim.to_dict())
+                norm_val = re.sub(r"\s+", " ", value.lower())
+                if (slot, norm_val) not in prior_guard_claims:
+                    new_info_for_guard = True
                 if claim_status == "ambiguous":
                     has_ambiguous = True
                 elif slot in _RECEPTION_SIGNIN_SLOTS:
@@ -795,6 +1046,35 @@ class GameEngine:
                     summary=f"Visitor made unverified action claim to {guard.name}: {false_action_reason}",
                     shared_with=[],
                 )
+
+            # 3b. Apply security alert for overt heist confessions, forgery admissions, or hostile threats
+            if hostile_reason:
+                new_susp, applied = self.suspicion.apply_delta(self.state.suspicion, 45)
+                self.state.suspicion = new_susp
+                event_name = "hostile_admission"
+                status = "interrogation"
+                outcome_facts.append(hostile_reason)
+                guidance = (
+                    "Halt the visitor immediately. Confront them sternly about their alarming or "
+                    "incriminating remark and demand an explanation. Do NOT clear them or let them pass."
+                )
+                self.state.last_notice = (
+                    f"Security alert: {hostile_reason} (+{applied} suspicion — Interrogation triggered!)"
+                )
+                self.memory.add_report(
+                    source_turn=player_turn.turn_id,
+                    summary=f"Security alert at {self.scenario.locations[self.state.current_location].name}: {hostile_reason}",
+                    shared_with=[],
+                )
+                if self.suspicion.is_final_interrogation(self.state.suspicion):
+                    self.interrogation.trigger_interrogation(
+                        self.state, is_final=True, reason=hostile_reason, memory=self.memory
+                    )
+                else:
+                    self.interrogation.trigger_interrogation(
+                        self.state, in_room=True, reason=hostile_reason, memory=self.memory
+                    )
+                self.state.interrogation.blocks_clearance = True
 
             # 4. Verify & apply ONLY genuine, evidence-backed contradictions (paraphrases = 0 penalty!)
             candidate_conflicts = list(analysis.get("contradictions", [])) + promoted_contradictions
@@ -848,7 +1128,8 @@ class GameEngine:
                 status = "contradiction_flagged"
                 event_name = "contradiction_flagged"
                 guidance = (
-                    "Confront the visitor with their earlier recorded statement from the supplied evidence "
+                    "Directly quote or cite the visitor's earlier on-record statement from the supplied "
+                    "evidence in your spoken reply, point out how it conflicts with what they just said, "
                     "and demand an explanation."
                 )
                 self.state.last_notice = (
@@ -917,13 +1198,19 @@ class GameEngine:
                     outcome_facts.append(item_result_obj.notice)
                     self.state.last_notice = item_result_obj.notice
 
-            # 6. Ambiguity, bare yes/no, rambling & repeated evasion handling
-            #    First vague/evasive answer = 0 penalty (guard asks for clarification).
-            #    2+ consecutive vague, rambling, bare yes/no, or non-answering turns = +15 suspicion!
+            # 6. Ambiguity, bare yes/no, repeated answers & evasion handling
+            #    First vague/repeated answer = 0 penalty (guard presses for specifics).
+            #    2+ consecutive vague, repeated, bare yes/no, or non-answering turns = +15 suspicion!
             bare_yes_no = _is_bare_yes_no(player_text)
-            if not contradictions_flagged and not false_action_reason:
+            is_repeat_to_guard = (
+                bool(claims_recorded)
+                and not new_info_for_guard
+                and not corrections_recorded
+            )
+            if not contradictions_flagged and not false_action_reason and not hostile_reason:
                 gave_clear_answer = (
                     not bare_yes_no
+                    and not is_repeat_to_guard
                     and bool(
                         (claims_recorded and not has_ambiguous)
                         or corrections_recorded
@@ -933,6 +1220,7 @@ class GameEngine:
                 is_dodging_or_rambling = (
                     bare_yes_no
                     or has_ambiguous
+                    or is_repeat_to_guard
                     or (
                         not gave_clear_answer
                         and (
@@ -986,25 +1274,94 @@ class GameEngine:
                             "The visitor was vague. Ask a concise open-ended clarifying question "
                             "(never a yes/no question)."
                         )
+                    elif is_repeat_to_guard:
+                        status = "clarification_requested"
+                        event_name = "clarification_requested"
+                        guidance = (
+                            "The visitor just repeated information they already gave you without "
+                            "answering your follow-up. Call them out and demand a specific new detail."
+                        )
+                    elif recommended == "ask_followup":
+                        status = "clarification_requested"
+                        event_name = "clarification_requested"
+                        guidance = (
+                            "The visitor's answer was too thin, generic, or implausible for after-hours "
+                            "museum security. Push back skeptically and ask a sharp open-ended question "
+                            "requiring concrete specifics (name, institution, sponsor, or authorized purpose)."
+                        )
                 else:
                     self.state.consecutive_evasions = 0
 
             # 7. Evaluate objective clearance for this location
+            exit_missing_package = (
+                self.state.current_location == "museum_exit"
+                and not _accounts_for_exit_package(player_text, claims_recorded)
+            )
+            if exit_missing_package and not contradictions_flagged and not hostile_reason:
+                status = "clarification_requested"
+                event_name = "clarification_requested"
+                route_note = (
+                    "Your Night Curator Escort log only covered an archive inspection."
+                    if self.state.authorization_route == "escort"
+                    else "Your gala invitation only covered the main pavilion."
+                    if self.state.authorization_route == "invitation"
+                    else "You're leaving after hours from the restricted wing."
+                )
+                outcome_facts.append(route_note)
+                outcome_facts.append(
+                    "Visitor repeated identity details without accounting for what they are carrying out."
+                )
+                guidance = (
+                    f"{route_note} Repeating their name or institution does not explain what is in "
+                    "their satchel. Demand they account for what they are carrying out of the museum."
+                )
+                self.state.last_notice = (
+                    "Account for what you're carrying out of the museum — repeating your name and institution isn't enough."
+                )
+
+            # A turn earns confirmation progress whenever the visitor gives concrete,
+            # non-ambiguous NEW details to this guard (not bare yes/no, not repeating
+            # the same claim, not missing exit package accounting). Do not let a generic
+            # LLM "ask_followup" trap a cooperative player in an infinite loop.
             substantive = (
                 not bare_yes_no
+                and not is_repeat_to_guard
+                and not exit_missing_package
                 and bool(claims_recorded or corrections_recorded or has_asserted_identity)
                 and not has_ambiguous
                 and not false_action_reason
+                and not hostile_reason
             )
-            if substantive and not contradictions_flagged:
+            if substantive and not contradictions_flagged and not hostile_reason:
+                if self.state.current_location == "security_checkpoint":
+                    self.state.security_story_verified = True
                 self.state.guard_confirmations_count[guard.id] = (
                     self.state.guard_confirmations_count.get(guard.id, 0) + 1
                 )
             newly_completed = self._evaluate_location_clearance(
                 guard=guard,
                 substantive_turn=substantive,
-                had_contradiction=bool(contradictions_flagged),
+                had_contradiction=bool(contradictions_flagged or hostile_reason),
             )
+            if (
+                not newly_completed
+                and self.state.current_location == "security_checkpoint"
+                and self.state.security_story_verified
+                and self.state.authorization_route is None
+                and not contradictions_flagged
+                and not hostile_reason
+            ):
+                outcome_facts.append(
+                    "Visitor's explanation checks out, but verbal claims alone cannot unlock the scanner—they must present their Invitation Letter from their satchel or sign the Night Curator Escort log."
+                )
+                guidance = (
+                    "Acknowledge that their verbal story checks out—do NOT re-ask who authorized them. "
+                    "Tell them clearly that the checkpoint scanner requires physical authorization: "
+                    "either present their Invitation Letter or request a Night Curator Escort."
+                )
+                self.state.last_notice = (
+                    "Story verified! Physical authorization still needed — present your Invitation Letter (Inventory) or click 'Request Night Curator Escort (+25s)'."
+                )
             for obj_id in newly_completed:
                 obj = self.scenario.objectives[obj_id]
                 outcome_facts.append(f"Objective cleared: {obj.name}.")
@@ -1037,37 +1394,48 @@ class GameEngine:
                 loc_def = self.scenario.locations[self.state.current_location]
                 obj = self.routes.objective_for_location(loc_def.id)
                 if obj is not None and obj.id not in self.state.completed_objectives:
+                    already_covered_here = {c.slot for c in guard_prior_view["claims"]} | {
+                        c["slot"] for c in claims_recorded
+                    }
+                    fresh_angles = (
+                        "which specific gallery, archive, or artifact they are inspecting tonight",
+                        "what time they arrived and when they are scheduled to leave",
+                        "their specific department, title, or home institution",
+                        "what documents or equipment they brought with them tonight",
+                        "who their museum sponsor or contact is",
+                    )
+                    turn_idx = self.state.guard_turns_count.get(guard.id, 1)
+                    next_angle = fresh_angles[turn_idx % len(fresh_angles)]
+
                     if loc_def.security_level >= 3 and context.get("earlier_claims"):
-                        # Pick topic names only (never values!) that weren't just restated this turn
-                        just_stated = {c["slot"] for c in claims_recorded}
+                        # Pick topic names only (never values!) that haven't been covered with this guard yet
                         candidate_topics = [
                             c.slot.replace("_", " ")
                             for c in context.get("earlier_claims", [])
-                            if c.slot not in just_stated and c.slot != "other"
+                            if c.slot not in already_covered_here and c.slot != "other"
                         ]
                         topics_phrase = (
                             " or ".join(dict.fromkeys(candidate_topics[:2]))
                             if candidate_topics
-                            else "occupation, institution, or reason for visiting"
+                            else next_angle
                         )
                         outcome_facts.append(
-                            "Guard is performing a blind verification check before clearing the visitor."
+                            "Guard is performing a blind verification check on a NEW topic before clearing the visitor."
                         )
                         guidance = (
-                            f"Improvise one natural, open-ended 'who/what/where/why' question within "
-                            f"your museum-security scope asking the visitor about their {topics_phrase} "
-                            "in their own words. NEVER ask a yes/no question and NEVER mention, repeat, "
-                            "or hint at what they told previous guards."
+                            f"Acknowledge what the visitor just said. Do NOT repeat any question from "
+                            f"recent_turns. Ask one sharp, open-ended 'who/what/where/why' question about "
+                            f"{topics_phrase} in their own words. NEVER ask a yes/no question and NEVER "
+                            "reveal what they told previous guards."
                         )
                     elif substantive and loc_def.security_level >= 2:
                         outcome_facts.append(
-                            "Guard wants one more consistent follow-up before granting clearance."
+                            "Guard wants one more consistent follow-up on a NEW topic before granting clearance."
                         )
                         guidance = (
-                            "Remain cautious and improvise one sharp, open-ended question within your "
-                            "museum-security reference scope (about their role, credentials, sponsor, "
-                            "schedule, or purpose) before letting them pass. Never ask a yes/no "
-                            "question and never reveal prior checkpoint answers."
+                            f"Acknowledge what the visitor just said. Do NOT repeat any earlier question "
+                            f"from recent_turns. Ask one sharp, open-ended follow-up specifically about "
+                            f"{next_angle}. Never ask a yes/no question and never reveal prior checkpoint answers."
                         )
 
         # 8. Call B: generate guard's spoken line from backend-confirmed outcome
@@ -1146,14 +1514,63 @@ class GameEngine:
         susp_before: int,
     ) -> TurnResult:
         was_in_room = self.state.interrogation.in_room or self.state.interrogation.is_final
-        eval_raw = self.llm.evaluate_explanation(player_text, context)
+        hostile_reason = detect_hostile_or_incriminating(player_text)
+        if hostile_reason:
+            eval_raw = {
+                "evaluation": "unconvincing",
+                "reason": hostile_reason,
+                "evidence_turns": [],
+                "fallback": False,
+            }
+        else:
+            eval_raw = self.llm.evaluate_explanation(player_text, context)
+            if eval_raw.get("fallback"):
+                # Neutral AI outage during interrogation: 0 suspicion delta, 0 attempts spent.
+                reply = pick_neutral_fallback()
+                self.state.active_speaker = guard.name
+                self.state.active_dialogue = reply
+                self.state.last_notice = "Security channel glitched — please repeat your explanation (attempt preserved)."
+                self.memory.add_turn(
+                    speaker="guard",
+                    text=reply,
+                    guard_id=guard.id,
+                    location_id=self.state.current_location,
+                )
+                return TurnResult(
+                    status="interrogation" if self.state.interrogation.active else "ok",
+                    guard_id=guard.id,
+                    guard_name=guard.name,
+                    dialogue=reply,
+                    suspicion_before=susp_before,
+                    suspicion_after=self.state.suspicion,
+                    suspicion_delta=0,
+                    suspicion_label=self.suspicion.label_for(self.state.suspicion),
+                    notice=self.state.last_notice,
+                    interrogation_active=self.state.interrogation.active,
+                    interrogation_is_final=self.state.interrogation.is_final,
+                    ended=self.state.ended,
+                    ending_id=self.state.ending_id,
+                )
+
+        blocks_clearance = self.state.interrogation.blocks_clearance
         eval_outcome = self.interrogation.apply_explanation_evaluation(
             self.state, eval_raw
         )
         verdict = eval_outcome["evaluation"]
+        if not self.state.interrogation.active:
+            self.state.interrogation.blocks_clearance = False
 
         newly_completed: list[str] = []
-        if verdict == "convincing" and not self.state.interrogation_failed:
+        can_clear_after_eval = (
+            verdict == "convincing"
+            and not self.state.interrogation_failed
+            and not blocks_clearance
+            and (
+                self.state.current_location != "security_checkpoint"
+                or self.state.authorization_route is not None
+            )
+        )
+        if can_clear_after_eval:
             loc_guard = self.routes.guard_for_location(self.state.current_location)
             newly_completed = self._evaluate_location_clearance(
                 guard=loc_guard,
@@ -1162,21 +1579,48 @@ class GameEngine:
                 convincing_explanation=True,
             )
 
-        guard_after = self.active_guard
+        still_in_room = self.state.interrogation.in_room or self.state.interrogation.is_final
+        released_from_room = was_in_room and not still_in_room
+        # Keep the Chief Investigator on screen to deliver the dismissal line before transitioning out.
+        guard_after = INTERROGATOR_GUARD if released_from_room else self.active_guard
+        if released_from_room:
+            self.state.interrogation_dismissal = True
+            if self.state.auto_advance_to is None and not self.state.ended:
+                self.state.auto_advance_to = "__return_to_floor__"
+
         in_world_reason = _sanitize_in_character_reason(eval_outcome["reason"])
+        facts = [f"Explanation judged {verdict}: {in_world_reason}"]
+        if released_from_room:
+            facts.append(
+                "You (the Chief Investigator) are dismissing the visitor from the Interrogation Room."
+            )
+
+        if released_from_room and verdict == "convincing":
+            reply_guidance = (
+                "As the Chief Investigator, accept the visitor's explanation, confirm their story "
+                "checks out, and dismiss them from the Interrogation Room so they can proceed."
+            )
+        elif released_from_room and verdict == "partially_convincing":
+            reply_guidance = (
+                "As the Chief Investigator, tell the visitor you are releasing them back to the "
+                "museum floor under heavy scrutiny for now, and warn them security is watching closely."
+            )
+        elif verdict == "convincing":
+            reply_guidance = "Accept the explanation and allow the visitor to continue."
+        elif verdict == "partially_convincing":
+            reply_guidance = (
+                "Express skepticism and cite an earlier statement from the visitor's file if relevant."
+            )
+        else:
+            reply_guidance = (
+                "Reject the explanation firmly and cite the inconsistency from the visitor's record."
+            )
+
         dialogue_outcome = {
             "event": f"explanation_{verdict}",
-            "facts": [
-                f"Explanation judged {verdict}: {in_world_reason}",
-            ],
+            "facts": facts,
             "guidance": (
-                (
-                    "Accept the explanation and allow the visitor to continue."
-                    if verdict == "convincing"
-                    else "Express skepticism and cite an earlier statement from the visitor's file if relevant."
-                    if verdict == "partially_convincing"
-                    else "Reject the explanation firmly and cite the inconsistency from the visitor's record."
-                )
+                reply_guidance
                 + " Stay completely in character — never say meta words like 'inventory', 'turn', 'JSON', or 'engine'."
             ),
         }
@@ -1265,27 +1709,33 @@ class GameEngine:
         return None
 
     def required_confirmations_for(self, location_id: str, guard_id: str) -> int:
-        """Compute how many credible confirmations are needed based on suspicion tier.
+        """Compute how many credible confirmations are needed based on room and suspicion tier.
 
-        Suspicion tiers drive confirmation count:
-        - 0-19 (Low Attention): 1 at entrance, 2 in deeper rooms
-        - 20-39 (Moderate Attention): 2
-        - 40-79 (Increased / High Scrutiny): 3
-        - 80-99 (Imminent Detention): 4
-        Supporting your cover with a valid item for this guard reduces the count by 1 (min 1).
+        - museum_entrance: 1 at Low Attention, 2 at Moderate, 3 at Increased/High, 4 at Imminent
+        - security_checkpoint: 2 at Low/Moderate (+ must have verifiable authorization!), 3 at Increased+
+        - main_hall / restricted_area / vault_display / museum_exit: 3 at Low/Moderate, 4 at Increased+
+        Supporting your cover with a valid item for this guard reduces the count by 1 (min 1 at
+        entrance/checkpoint, min 2 in high-security wings).
         """
         susp = self.state.suspicion
-        if susp >= 80:
-            required = 4
-        elif susp >= 40:
-            required = 3
-        elif susp >= 20:
-            required = 2
+        if location_id == "museum_entrance":
+            if susp >= 80:
+                required = 4
+            elif susp >= 40:
+                required = 3
+            elif susp >= 20:
+                required = 2
+            else:
+                required = 1
+        elif location_id == "security_checkpoint":
+            required = 4 if susp >= 80 else 3 if susp >= 40 else 2
         else:
-            required = 1 if location_id == "museum_entrance" else 2
+            # Main Hall, Restricted Area, Vault Display, and Exit demand sustained questioning
+            required = 4 if susp >= 40 else 3
 
         if guard_id in self.state.guard_cover_supported:
-            required = max(1, required - 1)
+            floor = 2 if location_id in ("vault_display", "restricted_area") else 1
+            required = max(floor, required - 1)
         return required
 
     def _evaluate_location_clearance(
@@ -1311,6 +1761,11 @@ class GameEngine:
         loc_id = self.state.current_location
         obj = self.routes.objective_for_location(loc_id)
         if obj is None or obj.id in self.state.completed_objectives:
+            return []
+
+        # Security Checkpoint requires verifiable restricted authorization (invitation or escort),
+        # never just name + affiliation + department.
+        if loc_id == "security_checkpoint" and self.state.authorization_route is None:
             return []
 
         confirmations = self.state.guard_confirmations_count.get(guard.id, 0)
@@ -1399,35 +1854,36 @@ class GameEngine:
         Never exposes the player's hidden identity record or full claim summary.
         """
         loc = self.scenario.locations[self.state.current_location]
-        guard = self.active_guard
         in_room = self.state.interrogation.in_room or self.state.interrogation.is_final
+        show_room = in_room or self.state.interrogation_dismissal
+        guard = INTERROGATOR_GUARD if show_room else self.active_guard
         return {
             "mission_summary": self.scenario.mission_briefing.get(
                 "summary", self.scenario.summary
             ),
             "location": {
                 "id": loc.id,
-                "name": "Interrogation Room" if in_room else loc.name,
+                "name": "Interrogation Room" if show_room else loc.name,
                 "description": (
                     "A stark, windowless holding room beneath a harsh overhead lamp. Security logs cover the steel table."
-                    if in_room
+                    if show_room
                     else loc.short_description
                 ),
-                "image": INTERROGATION_SCENE_IMAGE if in_room else (
+                "image": INTERROGATION_SCENE_IMAGE if show_room else (
                     VAULT_EMPTY_SCENE_IMAGE
                     if loc.id == "vault_display" and self.state.urn_taken
                     else loc.thumbnail
                 ),
             },
             "scene": {
-                "background": self.current_scene_image,
+                "background": INTERROGATION_SCENE_IMAGE if show_room else self.current_scene_image,
                 "portrait": guard.portrait,
             },
             "objectives": self.routes.serialize_objectives(self.state),
             "dialogue": {
                 "speaker": self.state.active_speaker or guard.name,
                 "role": guard.role,
-                "personality": "Interrogator Detective" if in_room else guard.personality.title(),
+                "personality": "Interrogator Detective" if show_room else guard.personality.title(),
                 "text": self.state.active_dialogue or guard.opening_line,
             },
             "suspicion": {
@@ -1455,6 +1911,13 @@ class GameEngine:
             "available_routes": self.routes.available_routes(self.state),
             "can_take_urn": self.can_take_urn,
             "urn_taken": self.state.urn_taken,
+            "can_request_escort": (
+                loc.id == "security_checkpoint"
+                and self.state.authorization_route is None
+                and not self.state.interrogation.active
+                and not self.state.ended
+            ),
+            "authorization_route": self.state.authorization_route,
             "auto_advance_to": self.state.auto_advance_to,
             "can_voluntary_exit": self.endings.can_voluntary_exit(self.state),
             "prompt_injection_detected": self.state.prompt_injection_detected,
