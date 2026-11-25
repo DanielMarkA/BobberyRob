@@ -8,33 +8,39 @@ MAX_RESPONSE_CHARS = 500  # generic safety cap only; the backend owns real limit
 
 
 def _queue_send() -> None:
-    """Send button callback: validate lightly and queue the text."""
+    """Send button callback: validate lightly, queue text, and clear input."""
     text = st.session_state.get("response_text", "").strip()
     if not text:
         st.session_state["send_error"] = "Type a response before sending."
         return
     st.session_state.pop("send_error", None)
     st.session_state["pending_response"] = text
+    st.session_state["response_text"] = ""
 
 
-def process_pending() -> None:
-    """Call BEFORE drawing any panel, so every panel sees the updated state."""
+def process_pending() -> bool:
+    """Execute a queued chat response after stable UI has rendered.
+
+    Returns True if a pending response was processed.
+    """
     text = st.session_state.pop("pending_response", None)
     if text is None:
-        return
+        return False
 
-    with st.spinner("The guard is considering your answer..."):
-        try:
-            st.session_state["game"] = submit_response(text)
-        except Exception:
-            # Keep the player's text so they can retry without retyping.
-            st.session_state["send_error"] = "Could not send your response. Please try again."
-            return
-
-    st.session_state["response_text"] = ""  # clear the input only on success
+    try:
+        st.session_state["game"] = submit_response(text)
+    except Exception:
+        # Restore the player's text on next fragment render so they can retry.
+        st.session_state["send_error"] = "Could not send your response. Please try again."
+        st.session_state["_restore_response_text"] = text
+    return True
 
 
-def render(game: dict) -> None:
+def render(game: dict, *, thinking_status: str | None = None) -> None:
+    restore = st.session_state.pop("_restore_response_text", None)
+    if restore is not None:
+        st.session_state["response_text"] = restore
+
     esc = html.escape
     dialogue = game["dialogue"]
     scene = game.get("scene", {})
@@ -53,11 +59,12 @@ def render(game: dict) -> None:
     feedback = "".join(
         f'<p class="checkpoint-feedback{modifier}" role="{role}">{esc(message)}</p>'
         for message, modifier, role in (
+            (thinking_status, "", "status"),
             (st.session_state.get("send_error"), " error", "alert"),
             (st.session_state.get("item_error"), " error", "alert"),
             (st.session_state.get("move_error"), " error", "alert"),
             (evidence_note, "", "status"),
-            (game.get("notice"), "", "status"),
+            (game.get("notice") if not thinking_status else None, "", "status"),
         )
         if message
     )
@@ -93,5 +100,9 @@ def render(game: dict) -> None:
                 )
             with col_send:
                 st.form_submit_button(
-                    "Send", type="primary", on_click=_queue_send, width="stretch"
+                    "Send",
+                    type="primary",
+                    on_click=_queue_send,
+                    disabled=bool(thinking_status),
+                    width="stretch",
                 )

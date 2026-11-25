@@ -14,10 +14,12 @@ def _queue_voluntary_exit() -> None:
     st.session_state["pending_voluntary_exit"] = True
 
 
-def process_pending() -> None:
-    """Process queued route or voluntary-exit actions before rendering."""
+def process_pending() -> bool:
+    """Process queued route or voluntary-exit actions after stable UI has rendered."""
+    handled = False
     target = st.session_state.pop("pending_move", None)
     if target is not None:
+        handled = True
         try:
             st.session_state["game"] = move_to_location(target)
             st.session_state.pop("move_error", None)
@@ -25,11 +27,13 @@ def process_pending() -> None:
             st.session_state["move_error"] = "Could not move to that location."
 
     if st.session_state.pop("pending_voluntary_exit", False):
+        handled = True
         try:
             st.session_state["game"] = trigger_voluntary_exit()
             st.session_state.pop("move_error", None)
         except Exception:
             st.session_state["move_error"] = "Could not complete voluntary exit."
+    return handled
 
 
 def render(game: dict) -> None:

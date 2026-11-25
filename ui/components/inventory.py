@@ -15,18 +15,18 @@ def _queue_use() -> None:
         st.session_state["pending_item"] = item_id
 
 
-def process_pending() -> None:
-    """Call BEFORE drawing any panel, so every panel sees the updated state."""
+def process_pending() -> bool:
+    """Execute a queued item presentation after stable UI has rendered."""
     item_id = st.session_state.pop("pending_item", None)
     if item_id is None:
-        return
+        return False
 
-    with st.spinner("Using item..."):
-        try:
-            st.session_state["game"] = use_item(item_id)
-            st.session_state.pop("item_error", None)
-        except Exception:
-            st.session_state["item_error"] = "Could not use that item. Please try again."
+    try:
+        st.session_state["game"] = use_item(item_id)
+        st.session_state.pop("item_error", None)
+    except Exception:
+        st.session_state["item_error"] = "Could not use that item. Please try again."
+    return True
 
 
 def render(items: list[dict]) -> None:
