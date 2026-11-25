@@ -1799,6 +1799,8 @@ header[data-testid="stHeader"],
 
 .checkpoint-portrait[src*="Last%20Guard.webp"],
 .checkpoint-portrait[src*="Second%20Guard.webp"],
+.checkpoint-portrait[src*="inspector.webp"],
+.checkpoint-portrait[src*="chief.webp"],
 .checkpoint-portrait[src*="Casual.webp"],
 .checkpoint-portrait[src*="casual.webp"] {
   inset-block-start: 6%;

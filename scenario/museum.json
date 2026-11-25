@@ -184,7 +184,7 @@
       "assigned_location": "security_checkpoint",
       "opening_line": "Step forward to the scanner, please. State your clearance, who authorized your visit, and which department you represent.",
       "style_note": "Meticulous and analytical; cross-checks earlier visitor logs, spots counterfeit watermarks immediately, and probes specific details.",
-      "portrait": "/app/static/images/observant.webp"
+      "portrait": "/app/static/images/inspector.webp"
     },
     {
       "id": "guard_experienced",
@@ -194,7 +194,7 @@
       "assigned_location": "restricted_area",
       "opening_line": "Thirty years here, and I know every curator on staff. Who approved your access back here, and what did you tell reception?",
       "style_note": "Shrewd, unflappable veteran; cross-examines earlier claims from reception and checkpoint logs and probes institutional history.",
-      "portrait": "/app/static/images/experienced.webp"
+      "portrait": "/app/static/images/chief.webp"
     },
     {
       "id": "guard_impatient",
