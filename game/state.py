@@ -44,9 +44,10 @@ class ContradictionRecord:
 
 @dataclass
 class InterrogationState:
-    """Tracks active questioning, formal interrogation, or final lockdown."""
+    """Tracks active questioning, formal interrogation room, or final lockdown."""
 
     active: bool = False
+    in_room: bool = False
     is_final: bool = False
     pending_contradiction_id: Optional[int] = None
     attempts_used: int = 0
@@ -62,6 +63,7 @@ class InterrogationState:
     def from_dict(cls, data: dict[str, Any]) -> "InterrogationState":
         return cls(
             active=bool(data.get("active", False)),
+            in_room=bool(data.get("in_room", False)),
             is_final=bool(data.get("is_final", False)),
             pending_contradiction_id=data.get("pending_contradiction_id"),
             attempts_used=int(data.get("attempts_used", 0)),
@@ -99,6 +101,7 @@ class ItemUseResult:
     suspicion_delta: int
     dialogue: str
     notice: str
+    triggers_interrogation: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -139,6 +142,7 @@ class TurnResult:
     explanation_evaluation: Optional[dict[str, Any]] = None
     item_result: Optional[dict[str, Any]] = None
     objectives_completed: list[str] = field(default_factory=list)
+    auto_advance_to: Optional[str] = None
     interrogation_active: bool = False
     interrogation_is_final: bool = False
     ended: bool = False
@@ -159,18 +163,23 @@ class GameState:
     completed_objectives: list[str] = field(default_factory=list)
     visited_locations: list[str] = field(default_factory=list)
     cleared_guards: list[str] = field(default_factory=list)
+    guard_cover_supported: list[str] = field(default_factory=list)
     items_used: list[str] = field(default_factory=list)
     items_presented_log: list[dict[str, Any]] = field(default_factory=list)
     contradictions: list[ContradictionRecord] = field(default_factory=list)
     interrogation: InterrogationState = field(default_factory=InterrogationState)
     interrogations_triggered: int = 0
     interrogation_failed: bool = False
+    prompt_injection_detected: bool = False
+    urn_taken: bool = False
     voluntary_exit: bool = False
     consecutive_evasions: int = 0
     guard_turns_count: dict[str, int] = field(default_factory=dict)
+    guard_confirmations_count: dict[str, int] = field(default_factory=dict)
     active_speaker: str = ""
     active_dialogue: str = ""
     last_notice: Optional[str] = None
+    auto_advance_to: Optional[str] = None
     penalties: list[PenaltyRecord] = field(default_factory=list)
     ended: bool = False
     ending_id: Optional[str] = None
@@ -185,7 +194,12 @@ class GameState:
 
     @property
     def movement_locked(self) -> bool:
-        return self.ended or self.interrogation.active or self.suspicion >= 80
+        return (
+            self.ended
+            or self.prompt_injection_detected
+            or self.interrogation.active
+            or self.suspicion >= 100
+        )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -196,18 +210,23 @@ class GameState:
             "completed_objectives": list(self.completed_objectives),
             "visited_locations": list(self.visited_locations),
             "cleared_guards": list(self.cleared_guards),
+            "guard_cover_supported": list(self.guard_cover_supported),
             "items_used": list(self.items_used),
             "items_presented_log": list(self.items_presented_log),
             "contradictions": [c.to_dict() for c in self.contradictions],
             "interrogation": self.interrogation.to_dict(),
             "interrogations_triggered": self.interrogations_triggered,
             "interrogation_failed": self.interrogation_failed,
+            "prompt_injection_detected": self.prompt_injection_detected,
+            "urn_taken": self.urn_taken,
             "voluntary_exit": self.voluntary_exit,
             "consecutive_evasions": self.consecutive_evasions,
             "guard_turns_count": dict(self.guard_turns_count),
+            "guard_confirmations_count": dict(self.guard_confirmations_count),
             "active_speaker": self.active_speaker,
             "active_dialogue": self.active_dialogue,
             "last_notice": self.last_notice,
+            "auto_advance_to": self.auto_advance_to,
             "penalties": [p.to_dict() for p in self.penalties],
             "ended": self.ended,
             "ending_id": self.ending_id,
@@ -227,6 +246,7 @@ class GameState:
             completed_objectives=list(data.get("completed_objectives", [])),
             visited_locations=list(data.get("visited_locations", [])),
             cleared_guards=list(data.get("cleared_guards", [])),
+            guard_cover_supported=list(data.get("guard_cover_supported", [])),
             items_used=list(data.get("items_used", [])),
             items_presented_log=list(data.get("items_presented_log", [])),
             contradictions=[
@@ -235,14 +255,20 @@ class GameState:
             interrogation=InterrogationState.from_dict(data.get("interrogation", {})),
             interrogations_triggered=int(data.get("interrogations_triggered", 0)),
             interrogation_failed=bool(data.get("interrogation_failed", False)),
+            prompt_injection_detected=bool(data.get("prompt_injection_detected", False)),
+            urn_taken=bool(data.get("urn_taken", False)),
             voluntary_exit=bool(data.get("voluntary_exit", False)),
             consecutive_evasions=int(data.get("consecutive_evasions", 0)),
             guard_turns_count={
                 k: int(v) for k, v in data.get("guard_turns_count", {}).items()
             },
+            guard_confirmations_count={
+                k: int(v) for k, v in data.get("guard_confirmations_count", {}).items()
+            },
             active_speaker=data.get("active_speaker", ""),
             active_dialogue=data.get("active_dialogue", ""),
             last_notice=data.get("last_notice"),
+            auto_advance_to=data.get("auto_advance_to"),
             penalties=[PenaltyRecord.from_dict(p) for p in data.get("penalties", [])],
             ended=bool(data.get("ended", False)),
             ending_id=data.get("ending_id"),

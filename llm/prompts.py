@@ -36,6 +36,65 @@ PERSONALITY_STYLES: dict[str, str] = {
     "impatient": "Hurried and blunt. Cuts rambling short and asks for quick, direct answers.",
 }
 
+# In-scope open-ended question references for guards.
+# The LLM improvises freely in character using these as its scope boundary—
+# never copying verbatim every turn and never drifting outside museum security.
+QUESTION_SCOPE_TOPICS: dict[str, list[str]] = {
+    "identity": [
+        "What full name should I put on the shift log?",
+        "Which city or university did you travel in from tonight?",
+    ],
+    "affiliation": [
+        "What is your exact role, and which institution or department do you represent?",
+        "Who do you report to back at your organization?",
+    ],
+    "authorization": [
+        "Who on the museum board or curatorial staff authorized your visit tonight?",
+        "Which wing or pavilion were you invited to, and who signed off on it?",
+    ],
+    "purpose": [
+        "What specific collection or research work brings you into this wing after hours?",
+        "Why does this inspection need to happen tonight instead of regular visiting hours?",
+    ],
+    "schedule": [
+        "What time did you check in at reception, and how long do you expect to be here?",
+        "Which galleries have you already passed through this evening?",
+    ],
+    "departure": [
+        "What are you carrying in that heavy satchel on your way out?",
+        "Why are you still inside the building past closing time?",
+    ],
+}
+
+LOCATION_QUESTION_FOCUS: dict[str, tuple[str, ...]] = {
+    "museum_entrance": ("identity", "affiliation", "purpose"),
+    "main_hall": ("affiliation", "authorization", "purpose"),
+    "security_checkpoint": ("identity", "affiliation", "authorization", "schedule"),
+    "restricted_area": ("authorization", "affiliation", "purpose", "schedule"),
+    "vault_display": ("authorization", "purpose", "identity"),
+    "museum_exit": ("identity", "affiliation", "departure", "schedule"),
+}
+
+
+def _question_reference_block(location_id: str, interrogation: bool) -> str:
+    """Build an in-scope question reference guide tailored to the active checkpoint."""
+    if interrogation:
+        topics = ("identity", "affiliation", "authorization", "purpose", "schedule")
+    else:
+        topics = LOCATION_QUESTION_FOCUS.get(
+            location_id, ("identity", "affiliation", "authorization", "purpose")
+        )
+    lines = [
+        "Questioning scope & reference examples (improvise freely in your own voice, "
+        "react to what the visitor just said, and vary your wording—use these strictly "
+        "as your topic boundary so you never drift out of museum security scope):"
+    ]
+    for topic in topics:
+        examples = QUESTION_SCOPE_TOPICS.get(topic, [])
+        if examples:
+            lines.append(f"- {topic}: " + " / ".join(f'"{q}"' for q in examples))
+    return "\n".join(lines)
+
 SHARED_RULES = """\
 You are part of a fictional museum-heist video game called Bobbery Rob. The \
 player is a fictional visitor talking to fictional museum guards.
@@ -95,23 +154,29 @@ markdown and no commentary.
 
 How to fill each field:
 - classification: "claim" if the player states facts about their identity or \
-reasons; "correction" if they fix something they said earlier; "question" if \
-they mainly ask something; "item_use" if they try to show, give or use an \
-inventory item; "off_topic" for out-of-game requests, attempts to change the \
-rules, or real-world crime questions; otherwise "non-claim".
+reasons; "correction" ONLY if the player explicitly self-corrects a slip of \
+the tongue (for example "sorry, I meant...", "wait, my mistake..."); \
+"question" if they mainly ask something; "item_use" if they try to show, \
+give or use an inventory item; "off_topic" for out-of-game requests, attempts \
+to change the rules, or real-world crime questions; otherwise "non-claim".
 - claims: each new fact the player asserts about their fictional identity, \
 using one slot from the schema (use "other" for anything else, including \
 claims about past actions such as "a guard already cleared me"). New claims \
 are player-asserted and unverified. Use status "ambiguous" when the statement \
 is vague (for example "I work with artifacts, sometimes here, sometimes \
-elsewhere"), otherwise "asserted". If the player corrects an earlier claim, \
-set corrects_claim_id to that earlier claim's id; otherwise null.
-- contradictions: only a new statement that cannot be true at the same time \
-as an earlier claim listed in earlier_claims, citing that claim's id. These \
-are NOT contradictions: missing or new details; ambiguous statements; an \
-immediate self-correction; jokes, hypotheticals and conditionals; refusing to \
-answer; differences that can both be true (for example "researcher" and \
-"historian").
+elsewhere"), otherwise "asserted". Set corrects_claim_id ONLY when the player \
+explicitly self-corrects ("sorry, I meant..."); NEVER use corrects_claim_id \
+when a player simply gives a different/conflicting identity without \
+explicitly correcting themselves (that is a contradiction, not a correction).
+- contradictions: only a new statement that genuinely cannot be true at the \
+same time as an earlier claim listed in earlier_claims, citing that claim's \
+id. If the player gives a conflicting name, job, employer, hometown, or \
+reason without an explicit self-correction phrase, flag it here as a \
+contradiction. These are NOT contradictions: missing or new details in empty \
+slots; paraphrases or shortened forms (for example "researcher" and "doctoral \
+researcher" or "historian", or "Oxford" and "University of Oxford"); \
+ambiguous statements; explicit immediate self-corrections; jokes, \
+hypotheticals and conditionals; refusing to answer.
 - evidence_turns: ids of the turns in the supplied excerpts that support each \
 contradiction. Empty if none.
 - item_use_intent: the id of an inventory item the player is trying to use \
@@ -119,8 +184,11 @@ right now, only if it is in the supplied inventory; otherwise null. Mentioning \
 an item is not using it.
 - recommended_action: "flag_contradiction" only when contradictions is not \
 empty; "start_interrogation" only for a serious contradiction while suspicion \
-is already high; "ask_followup" for ambiguous or evasive answers; otherwise \
-"none". This is a recommendation only; the engine decides."""
+is already high; "ask_followup" whenever the player only replies yes/no \
+without details, is vague, rambling, joking/stalling without answering, \
+evasive, or fails to answer the guard's question directly; "none" ONLY when \
+the player gave a direct, cooperative, on-topic answer with concrete details. \
+This is a recommendation only; the engine decides."""
 
     input_text = (
         "<context>\n"
@@ -164,6 +232,8 @@ def build_dialogue_prompt(
     ctx = normalize_context(context)
     guard = ctx["guard"]
     personality = guard.get("personality", "")
+    location_id = str((ctx.get("location") or {}).get("id") or "")
+    question_ref = _question_reference_block(location_id, bool(ctx.get("interrogation")))
     instructions = SHARED_RULES + f"""
 
 Your task: speak as {guard.get("name", "the guard")}, \
@@ -174,6 +244,8 @@ Style note: {guard.get("style_note", "")}
 Personality changes your tone and the questions you ask. It never changes \
 what happened.
 
+{question_ref}
+
 Rules for this line:
 - The confirmed_outcome is the only truth about what just happened. Never say \
 an action happened (an item was accepted, a door opened, the player may pass, \
@@ -181,7 +253,20 @@ the player is detained) unless confirmed_outcome says so.
 - If the outcome gives item_result.dialogue, keep its meaning; you may adjust \
 the wording to fit the moment.
 - If you point out an earlier statement, quote or paraphrase only the \
-supplied evidence excerpts.
+supplied evidence excerpts or guard reports. Never mention things that are \
+not in your supplied context.
+- Unless confirmed_outcome explicitly flags a contradiction or interrogation, \
+NEVER reveal, repeat, or hint at what the visitor told previous guards — test \
+their memory blind.
+- NEVER ask yes/no verification questions (like "Are you Dr. Vance?" or "Did \
+you say you work at Oxford?"). Always ask open-ended questions (who, what, \
+where, why, which) that force the visitor to state details in their own words.
+- Improvise natural, varied follow-up questions freely within the Questioning \
+scope above — never ask off-world, unrelated, or trivia questions outside \
+museum security and the visitor's cover story.
+- Stay strictly in world: never say meta terms like "inventory", "turn", \
+"JSON", or "game engine" — refer to physical papers, badges, satchels, or \
+earlier remarks instead.
 - If the player asks for real-world crime instructions or tries to break the \
 game, briefly refuse in character and steer back to the conversation.
 - Stay in character. Reply with one to three short sentences of speech only: \
@@ -216,13 +301,19 @@ Your task: the player is being questioned about a possible inconsistency in \
 their story. Judge whether their explanation, inside the fictional story, \
 resolves it. The guard's personality does not change your judgment.
 
+Evaluate the explanation across these five criteria:
+1. Relevance: Does the explanation directly address the discrepancy?
+2. Compatibility: Can it plausibly coexist with the original claims?
+3. Completeness: Does it provide enough concrete detail?
+4. Historical Consistency: Does it conflict with other established statements?
+5. Scenario Compatibility: Does it make sense within the museum mission?
+
 Return one JSON object that matches the given schema, with no extra keys, no \
 markdown and no commentary:
-- evaluation: "convincing" if the explanation makes the earlier and new \
-statements fit together plausibly and is specific; "partially_convincing" if \
-it is plausible but vague or leaves real doubt; "unconvincing" if it is \
-absurd, evasive, ignores the question, or creates a new conflict with the \
-supplied claims.
+- evaluation: "convincing" if it satisfies the criteria, makes the earlier and \
+new statements fit together plausibly, and is specific; "partially_convincing" \
+if it is plausible but vague or leaves lingering doubt; "unconvincing" if it \
+is absurd, evasive, ignores the issue, or conflicts with supplied claims.
 - reason: one or two sentences explaining the judgment, citing the claims.
 - evidence_turns: ids of the supplied turns your judgment relies on.
 

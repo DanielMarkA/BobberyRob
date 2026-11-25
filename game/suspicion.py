@@ -30,8 +30,16 @@ class SuspicionManager:
         return max(self.min_value, min(self.max_value, int(value)))
 
     def apply_delta(self, current: int, delta: int) -> tuple[int, int]:
-        """Apply a signed delta, clamp to bounds, and return (new_value, applied_delta)."""
-        clamped = self.clamp(current + delta)
+        """Apply a signed delta, clamp to bounds, and return (new_value, applied_delta).
+
+        Per Stage 8 (80-99 High-Security Limited Recovery): suspicion reduction is
+        halved while suspicion is in the 80-99 band (unless already at 100 final).
+        """
+        effective_delta = int(delta)
+        if effective_delta < 0 and 80 <= current < self.max_value:
+            # Halve recovery toward zero, always recovering at least -1
+            effective_delta = -max(1, abs(effective_delta) // 2)
+        clamped = self.clamp(current + effective_delta)
         return clamped, clamped - current
 
     def event_delta(self, event_name: str) -> int:

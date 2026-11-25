@@ -56,28 +56,29 @@ def render(items: list[dict]) -> None:
             st.html('<p class="inv-hint">Your inventory is empty.</p>')
             return
 
-        selected_name = None
+        selected_item = None
         for item in items:
-            if item["id"] == selected:
-                selected_name = item["name"]
+            is_selected = item["id"] == selected
+            if is_selected:
+                selected_item = item
             image = f'![]({item["image"]}) ' if item.get("image") else ""
             st.button(
                 f'{image}{item["name"]} `×{item["quantity"]}`',
                 key=f"pick_{item['id']}",
-                type="primary" if item["id"] == selected else "secondary",
+                type="primary" if is_selected else "secondary",
                 on_click=_select,
                 args=(item["id"],),
                 disabled=item["quantity"] <= 0,
                 width="stretch",
             )
 
-        if selected is not None and selected_name:
+        if selected_item is not None:
             st.button(
-                f"Present {selected_name}",
+                f'Present {selected_item["name"]}',
                 key="use_item",
                 type="primary",
                 on_click=_queue_use,
                 width="stretch",
             )
         else:
-            st.html('<p class="inv-hint">Select an item to present it.</p>')
+            st.html('<p class="inv-hint">Hover to inspect · click to select.</p>')

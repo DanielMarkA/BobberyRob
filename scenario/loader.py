@@ -78,6 +78,7 @@ class ItemEffect:
     suspicion_delta: int
     dialogue: str
     notice: str
+    triggers_interrogation: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -358,6 +359,7 @@ def validate_scenario(data: dict[str, Any]) -> ScenarioConfig:
                 suspicion_delta=eff["suspicion_delta"],
                 dialogue=eff["dialogue"],
                 notice=eff["notice"],
+                triggers_interrogation=bool(eff.get("triggers_interrogation", False)),
             )
 
         items[item_id] = ItemDef(

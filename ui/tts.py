@@ -42,6 +42,11 @@ GUARD_VOICES: dict[str, dict[str, str]] = {
         "rate": "+14%",
         "pitch": "+2Hz",
     },
+    "guard_exit": {
+        "voice": "en-US-EricNeural",
+        "rate": "-2%",
+        "pitch": "-4Hz",
+    },
     "guard_interrogator": {
         "voice": "en-GB-ThomasNeural",
         "rate": "+4%",
@@ -55,6 +60,7 @@ SPEAKER_TO_GUARD_ID: dict[str, str] = {
     "Inspector Lin": "guard_observant",
     "Chief Sterling": "guard_experienced",
     "Officer Gomez": "guard_impatient",
+    "Captain Reyes": "guard_exit",
     "Chief Investigator": "guard_interrogator",
 }
 
@@ -69,15 +75,21 @@ def resolve_guard_id(guard_id: Optional[str] = None, speaker: Optional[str] = No
     return "guard_casual"
 
 
+TTS_TIMEOUT_SECONDS = 5.0
+
+
 async def _synthesize_bytes_async(text: str, voice: str, rate: str, pitch: str) -> bytes:
     import edge_tts
 
-    communicate = edge_tts.Communicate(text=text, voice=voice, rate=rate, pitch=pitch)
-    chunks: list[bytes] = []
-    async for chunk in communicate.stream():
-        if chunk.get("type") == "audio" and chunk.get("data"):
-            chunks.append(chunk["data"])
-    return b"".join(chunks)
+    async def _collect() -> bytes:
+        communicate = edge_tts.Communicate(text=text, voice=voice, rate=rate, pitch=pitch)
+        chunks: list[bytes] = []
+        async for chunk in communicate.stream():
+            if chunk.get("type") == "audio" and chunk.get("data"):
+                chunks.append(chunk["data"])
+        return b"".join(chunks)
+
+    return await asyncio.wait_for(_collect(), timeout=TTS_TIMEOUT_SECONDS)
 
 
 def _run_async(coro) -> bytes:
@@ -88,7 +100,7 @@ def _run_async(coro) -> bytes:
         return asyncio.run(coro)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-        return pool.submit(asyncio.run, coro).result(timeout=12.0)
+        return pool.submit(asyncio.run, coro).result(timeout=TTS_TIMEOUT_SECONDS + 1.0)
 
 
 @st.cache_data(max_entries=128, show_spinner=False)

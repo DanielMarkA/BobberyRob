@@ -1,13 +1,14 @@
 import os
+import time
 
 import streamlit as st
 
-from ui.audio import render_audio_controller, track_for_gameplay
+from ui.audio import queue_sfx, render_audio_controller, reset_speech_dedup, track_for_gameplay
 from ui.components import (
     dialogue_panel, game_timer, header, inventory, mission_panel, suspicion_meter,
 )
-from ui.data_provider import get_game_state
-from ui.navigation import go_to, MAIN_MENU, RESULTS
+from ui.data_provider import get_game_state, move_to_location, start_mission
+from ui.navigation import go_to, reset_mission_state, MAIN_MENU, RESULTS
 
 
 def _load_state() -> dict:
@@ -27,6 +28,8 @@ def _pending_status(game: dict) -> str | None:
     if st.session_state.get("pending_response"):
         speaker = game.get("dialogue", {}).get("speaker", "The guard")
         return f"{speaker} is considering your answer..."
+    if st.session_state.get("pending_take_urn"):
+        return "Securing the Gold Urn..."
     if st.session_state.get("pending_item"):
         return "Presenting item..."
     if st.session_state.get("pending_move"):
@@ -34,6 +37,13 @@ def _pending_status(game: dict) -> str | None:
     if st.session_state.get("pending_voluntary_exit"):
         return "Concluding mission..."
     return None
+
+
+def _rerun_fragment() -> None:
+    try:
+        st.rerun(scope="fragment")
+    except st.errors.StreamlitAPIException:
+        st.rerun()
 
 
 @st.fragment
@@ -55,8 +65,6 @@ def _render_checkpoint() -> None:
 
         # Render all 3 columns FIRST so the scene, panels, and input stay crisp
         # and stationary (no layout shift or full-screen fade) while the LLM runs.
-        # Conversation comes first in DOM for mobile and keyboard order;
-        # desktop CSS maps columns to Left: Mission | Center: Scenes | Right: Status.
         conversation, status, mission = st.columns(3)
         with conversation, st.container(key="checkpoint_conversation"):
             dialogue_panel.render(game, thinking_status=thinking_status)
@@ -83,26 +91,118 @@ def _render_checkpoint() -> None:
             if updated.get("ended"):
                 go_to(RESULTS)
                 st.rerun(scope="app")
-            try:
-                st.rerun(scope="fragment")
-            except st.errors.StreamlitAPIException:
-                st.rerun()
+            if updated.get("prompt_injection_detected"):
+                queue_sfx("jumpscare")
+                st.rerun(scope="app")
+            _rerun_fragment()
 
-    # Sync BGM mood, one-shot event SFX, and AI guard neural speech outside the grid container
+    # Sync BGM mood, one-shot event SFX, scene fade key, and AI guard neural speech
     speak_target = (
         (game["dialogue"]["speaker"], game["dialogue"]["text"], None)
         if not thinking_status
         else None
     )
+    scene_key = f"{game['location']['id']}|{'room' if (game.get('interrogation') or {}).get('in_room') else 'floor'}|{game.get('urn_taken', False)}"
+    item_tooltips = {
+        item["id"]: {
+            "header": item.get("inspect_header") or item["name"],
+            "lines": item.get("inspect_lines") or item.get("description") or "",
+        }
+        for item in game.get("inventory", [])
+    }
     render_audio_controller(
         track=track_for_gameplay(game),
         speak_current=speak_target,
+        scene_key=scene_key,
+        item_tooltips=item_tooltips,
+    )
+
+    # Auto-advance smoothly after guard clearance (or taking the Gold Urn)
+    auto_target = game.get("auto_advance_to")
+    if auto_target and not thinking_status and not game.get("ended"):
+        if os.getenv("BOBBERY_FAST_TRANSITIONS") != "1":
+            time.sleep(2.0)
+        st.session_state["game"] = move_to_location(auto_target)
+        queue_sfx("move")
+        _rerun_fragment()
+
+
+def _render_injection_jumpscare() -> None:
+    """Full-impact Dishonesty jumpscare screen when prompt injection is detected."""
+    with st.container(key="injection_jumpscare"):
+        st.html(
+            '<div class="jumpscare-flash" aria-hidden="true"></div>'
+            '<div class="jumpscare-stage">'
+            '  <div class="jumpscare-vignette" aria-hidden="true"></div>'
+            '  <div class="jumpscare-frame">'
+            '    <img class="jumpscare-portrait" src="/app/static/images/Dishonesty.webp" alt="Dishonesty detected" />'
+            '  </div>'
+            '  <div class="jumpscare-copy">'
+            '    <span class="jumpscare-badge">SECURITY BREACH // SYSTEM TAMPERING</span>'
+            '    <h1 class="jumpscare-title">DISHONESTY CAUGHT</h1>'
+            '    <p class="jumpscare-subtitle">'
+            '      Prompt injection detected. Trying to override museum security protocols '
+            '      terminates your infiltration immediately.'
+            '    </p>'
+            '  </div>'
+            '</div>'
+        )
+        with st.container(key="jumpscare_actions"):
+            col_restart, col_menu = st.columns(2)
+            with col_restart:
+                if st.button(
+                    "Restart Game",
+                    key="jumpscare_restart",
+                    type="primary",
+                    width="stretch",
+                ):
+                    start_mission()
+                    reset_mission_state()
+                    reset_speech_dedup()
+                    st.rerun()
+            with col_menu:
+                if st.button(
+                    "Main Menu",
+                    key="jumpscare_menu",
+                    width="stretch",
+                ):
+                    start_mission()
+                    reset_mission_state()
+                    reset_speech_dedup()
+                    go_to(MAIN_MENU)
+                    st.rerun()
+
+    render_audio_controller(
+        track="captured",
+        speak_current=None,
+        scene_key="prompt_injection_jumpscare",
     )
 
 
 def render() -> None:
+    try:
+        game = _load_state()
+    except Exception:
+        game = {}
+    if game.get("prompt_injection_detected"):
+        _render_injection_jumpscare()
+        return
+
     header.render(context="Active Checkpoint")
     _render_checkpoint()
+
+    with st.container(key="checkpoint_actions"):
+        col_restart, col_menu = st.columns(2)
+        with col_restart:
+            if st.button("Restart Mission", key="cp_restart", width="stretch"):
+                start_mission()
+                reset_mission_state()
+                reset_speech_dedup()
+                st.rerun()
+        with col_menu:
+            if st.button("Main Menu", key="cp_main_menu", width="stretch"):
+                go_to(MAIN_MENU)
+                st.rerun()
 
     if os.getenv("BOBBERY_DEV_SHORTCUTS") == "1":
         with st.container(key="dev_shortcuts"):

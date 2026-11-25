@@ -23,7 +23,16 @@ _AUDIO_ROOT = Path(__file__).resolve().parent.parent / "static" / "audio"
 _EXTENSIONS = (".mp3", ".ogg", ".wav")
 
 BGM_NAMES = ("menu", "stealth", "tension", "victory", "captured")
-SFX_NAMES = ("hover", "click", "send", "item_success", "item_fail", "suspicion_up", "move")
+SFX_NAMES = (
+    "hover",
+    "click",
+    "send",
+    "item_success",
+    "item_fail",
+    "suspicion_up",
+    "move",
+    "jumpscare",
+)
 
 
 def _asset_url(subdir: str, stem: str) -> Optional[str]:
@@ -78,6 +87,8 @@ def reset_speech_dedup() -> None:
 
 def track_for_gameplay(game: dict[str, Any]) -> str:
     """Select the gameplay BGM track based on suspicion and interrogation state."""
+    if game.get("prompt_injection_detected"):
+        return "captured"
     interrogation = game.get("interrogation") or {}
     suspicion_val = int((game.get("suspicion") or {}).get("value", 0))
     if interrogation.get("active") or suspicion_val >= 60:
@@ -94,8 +105,10 @@ def render_audio_controller(
     *,
     track: str,
     speak_current: Optional[tuple[str, str, Optional[str]]] = None,
+    scene_key: Optional[str] = None,
+    item_tooltips: Optional[dict[str, dict[str, str]]] = None,
 ) -> None:
-    """Mount/update the persistent browser audio engine, BGM, SFX, and guard TTS."""
+    """Mount/update the persistent browser audio engine, BGM, SFX, guard TTS, and UX keys."""
     if speak_current is not None:
         speaker, text, guard_id = speak_current
         queue_speech(speaker=speaker, text=text, guard_id=guard_id)
@@ -120,6 +133,8 @@ def render_audio_controller(
         "track": track,
         "sfx": pending_sfx,
         "speech": speech_payload,
+        "scene_key": scene_key,
+        "item_tooltips": item_tooltips or {},
     }
     payload_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
 
@@ -164,6 +179,9 @@ def render_audio_controller(
               fadeTimer: null,
               lastSfxId: 0,
               lastSpeechId: 0,
+              queuedSpeech: null,
+              lastSceneKey: null,
+              itemTooltips: {{}},
               lastHoverAt: 0,
               sfxCache: {{}},
               bgmEl,
@@ -227,7 +245,77 @@ def render_audio_controller(
               }}
             }}
 
+            function playJumpscareSting() {{
+              stopVoice();
+              if (!state.prefs.sfx) return;
+              try {{
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const now = ctx.currentTime;
+                const master = ctx.createGain();
+                master.gain.setValueAtTime(0.001, now);
+                master.gain.exponentialRampToValueAtTime(0.62, now + 0.015);
+                master.gain.exponentialRampToValueAtTime(0.0008, now + 0.95);
+                master.connect(ctx.destination);
+
+                // Sudden sub-bass impact drop
+                const sub = ctx.createOscillator();
+                const subGain = ctx.createGain();
+                sub.type = "sawtooth";
+                sub.frequency.setValueAtTime(110, now);
+                sub.frequency.exponentialRampToValueAtTime(34, now + 0.55);
+                subGain.gain.setValueAtTime(0.65, now);
+                subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                sub.connect(subGain);
+                subGain.connect(master);
+                sub.start(now);
+                sub.stop(now + 0.65);
+
+                // Dissonant metallic screech chord (tritone + minor second)
+                [587.3, 622.3, 830.6, 1174.7].forEach((freq) => {{
+                  const osc = ctx.createOscillator();
+                  const g = ctx.createGain();
+                  osc.type = "sawtooth";
+                  osc.frequency.setValueAtTime(freq, now);
+                  osc.frequency.linearRampToValueAtTime(freq * 0.92, now + 0.85);
+                  g.gain.setValueAtTime(0.16, now);
+                  g.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+                  osc.connect(g);
+                  g.connect(master);
+                  osc.start(now);
+                  osc.stop(now + 0.9);
+                }});
+
+                // Sharp filtered noise burst
+                const len = Math.floor(ctx.sampleRate * 0.45);
+                const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+                const ch = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) {{
+                  ch[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.14));
+                }}
+                const noise = ctx.createBufferSource();
+                noise.buffer = buf;
+                const filt = ctx.createBiquadFilter();
+                filt.type = "bandpass";
+                filt.frequency.setValueAtTime(1400, now);
+                filt.Q.setValueAtTime(1.2, now);
+                const nGain = ctx.createGain();
+                nGain.gain.setValueAtTime(0.55, now);
+                nGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+                noise.connect(filt);
+                filt.connect(nGain);
+                nGain.connect(master);
+                noise.start(now);
+                setTimeout(() => {{ try {{ ctx.close(); }} catch (e) {{}} }}, 1200);
+              }} catch (e) {{}}
+            }}
+
             function playSfx(name, volume) {{
+              if (name === "jumpscare") {{
+                playJumpscareSting();
+                return;
+              }}
               if (!state.prefs.sfx || !state.unlocked) return;
               const url = state.manifest.sfx[name];
               if (!url) return;
@@ -281,7 +369,13 @@ def render_audio_controller(
 
             function playSpeech(speech) {{
               if (!speech || speech.id <= state.lastSpeechId) return;
+              if (!state.unlocked) {{
+                // Defer until first browser gesture unlocks audio autoplay
+                state.queuedSpeech = speech;
+                return;
+              }}
               state.lastSpeechId = speech.id;
+              state.queuedSpeech = null;
               if (!state.prefs.voice) return;
 
               stopVoice();
@@ -314,10 +408,138 @@ def render_audio_controller(
               if (state.unlocked) return;
               state.unlocked = true;
               ensureBgmPlaying();
+              if (state.queuedSpeech) {{
+                playSpeech(state.queuedSpeech);
+              }}
             }}
 
             document.addEventListener("pointerdown", unlockAudio, {{ passive: true }});
             document.addEventListener("keydown", unlockAudio, {{ passive: true }});
+
+            // UX: Enter sends chat response, Shift+Enter inserts a newline
+            document.addEventListener("keydown", (ev) => {{
+              if (ev.key !== "Enter" || ev.shiftKey || ev.ctrlKey || ev.altKey || ev.metaKey || ev.isComposing) {{
+                return;
+              }}
+              const target = ev.target;
+              if (!target || target.tagName !== "TEXTAREA") return;
+              const bar = target.closest(".st-key-response_bar");
+              if (!bar) return;
+              ev.preventDefault();
+              if (!target.value || !target.value.trim()) return;
+              const submitBtn = bar.querySelector("button:not(:disabled)");
+              if (submitBtn) {{
+                // Let Streamlit sync textarea value before submitting the form
+                target.dispatchEvent(new Event("input", {{ bubbles: true }}));
+                setTimeout(() => submitBtn.click(), 10);
+              }}
+            }}, true);
+
+            // Short cinematic scene fade overlay when advancing between locations
+            function triggerSceneFade() {{
+              let veil = document.getElementById("bobbery-scene-veil");
+              if (!veil) {{
+                veil = document.createElement("div");
+                veil.id = "bobbery-scene-veil";
+                veil.style.cssText =
+                  "position:fixed;inset:0;z-index:999990;pointer-events:none;" +
+                  "background:#0c0f0c;opacity:0;transition:opacity 360ms ease;";
+                document.body.appendChild(veil);
+              }}
+              veil.style.transition = "none";
+              veil.style.opacity = "0.78";
+              requestAnimationFrame(() => {{
+                requestAnimationFrame(() => {{
+                  veil.style.transition = "opacity 460ms ease-out";
+                  veil.style.opacity = "0";
+                }});
+              }});
+            }}
+
+            // Custom noir hover tooltip for Inventory items (keeps st.button DOM 100% untouched)
+            let hoveredPickEl = null;
+            function ensureItemTooltip() {{
+              let tip = document.getElementById("bobbery-item-tooltip");
+              if (!tip) {{
+                tip = document.createElement("div");
+                tip.id = "bobbery-item-tooltip";
+                tip.style.cssText =
+                  "position:fixed;z-index:999998;pointer-events:none;opacity:0;" +
+                  "max-width:270px;padding:0.65rem 0.78rem;border-radius:6px;" +
+                  "border:1px solid rgba(224,159,62,0.55);background:rgba(16,20,16,0.96);" +
+                  "box-shadow:0 12px 30px rgba(0,0,0,0.7);color:#ece8de;" +
+                  "font-family:system-ui,-apple-system,sans-serif;font-size:0.8rem;line-height:1.4;" +
+                  "transition:opacity 120ms ease;backdrop-filter:blur(8px);";
+                document.body.appendChild(tip);
+              }}
+              return tip;
+            }}
+
+            function hideItemTooltip() {{
+              hoveredPickEl = null;
+              const tip = document.getElementById("bobbery-item-tooltip");
+              if (tip) tip.style.opacity = "0";
+            }}
+
+            function showItemTooltip(pickEl, itemId) {{
+              const info = state.itemTooltips && state.itemTooltips[itemId];
+              if (!info) return;
+              const tip = ensureItemTooltip();
+              tip.innerHTML = "";
+              const head = document.createElement("div");
+              head.textContent = info.header || itemId;
+              head.style.cssText =
+                "color:#f3c46b;font-family:ui-monospace,monospace;font-size:0.7rem;" +
+                "font-weight:700;letter-spacing:0.07em;text-transform:uppercase;" +
+                "margin-bottom:0.35rem;padding-bottom:0.25rem;" +
+                "border-bottom:1px solid rgba(224,159,62,0.22);";
+              tip.appendChild(head);
+
+              const lines = String(info.lines || "").split("\\n").filter(Boolean);
+              lines.forEach((line) => {{
+                const p = document.createElement("div");
+                p.textContent = line;
+                p.style.cssText = "color:#d5d2c7;margin-top:0.18rem;";
+                tip.appendChild(p);
+              }});
+
+              const rect = pickEl.getBoundingClientRect();
+              const tipW = tip.offsetWidth || 260;
+              const tipH = tip.offsetHeight || 120;
+              let left = rect.left - tipW - 12;
+              if (left < 12) left = Math.min(window.innerWidth - tipW - 12, rect.right + 12);
+              let top = rect.top + (rect.height - tipH) / 2;
+              top = Math.max(12, Math.min(window.innerHeight - tipH - 12, top));
+              tip.style.left = left + "px";
+              tip.style.top = top + "px";
+              tip.style.opacity = "1";
+            }}
+
+            document.addEventListener("pointerover", (ev) => {{
+              const pickEl = ev.target && ev.target.closest
+                ? ev.target.closest('[class*="st-key-pick_"]')
+                : null;
+              if (!pickEl) return;
+              if (hoveredPickEl === pickEl) return;
+              const btn = pickEl.querySelector("button");
+              if (btn && btn.matches('[data-testid^="stBaseButton-primary"]')) {{
+                hideItemTooltip();
+                return;
+              }}
+              const match = pickEl.className.match(/st-key-pick_([A-Za-z0-9_-]+)/);
+              if (!match) return;
+              hoveredPickEl = pickEl;
+              showItemTooltip(pickEl, match[1]);
+            }}, {{ passive: true }});
+
+            document.addEventListener("pointerout", (ev) => {{
+              if (!hoveredPickEl) return;
+              if (ev.relatedTarget && hoveredPickEl.contains(ev.relatedTarget)) return;
+              hideItemTooltip();
+            }}, {{ passive: true }});
+
+            document.addEventListener("pointerdown", hideItemTooltip, {{ passive: true }});
+            window.addEventListener("scroll", hideItemTooltip, {{ passive: true, capture: true }});
 
             // Zero-rerun delegated hover & click SFX for all interactive UI controls
             document.addEventListener("pointerover", (ev) => {{
@@ -390,6 +612,15 @@ def render_audio_controller(
                   border-color: rgba(224, 159, 62, 0.85);
                   color: #ece8de;
                 }}
+                @media (max-width: 900px) {{
+                  #bobbery-audio-dock {{
+                    top: auto;
+                    bottom: 0.65rem;
+                    left: auto;
+                    right: 0.75rem;
+                    transform: none;
+                  }}
+                }}
               `;
               document.head.appendChild(style);
 
@@ -433,7 +664,16 @@ def render_audio_controller(
             window.__bobberyAudio = {{
               sync(p) {{
                 state.manifest = p.manifest || state.manifest;
+                if (p.item_tooltips) {{
+                  state.itemTooltips = p.item_tooltips;
+                }}
                 ensureDock();
+                if (p.scene_key && state.lastSceneKey && p.scene_key !== state.lastSceneKey) {{
+                  triggerSceneFade();
+                }}
+                if (p.scene_key) {{
+                  state.lastSceneKey = p.scene_key;
+                }}
                 if (p.track && p.track !== state.desiredTrack) {{
                   state.desiredTrack = p.track;
                   if (state.unlocked) ensureBgmPlaying();
