@@ -14,14 +14,14 @@ INTERROGATION_GUARD_PORTRAIT = "/app/static/images/interrogator.webp"
 INTERROGATOR_GUARD = GuardDef(
     id="guard_interrogator",
     name="Chief Investigator",
-    role="Security Interrogator",
+    role="Interrogator Detective",
     personality="impatient",
     assigned_location="museum_entrance",
     opening_line=(
         "Sit down. Security flagged serious contradictions in your visitor logs. "
         "Give me a clear explanation right now."
     ),
-    style_note="Abrupt, relentless, demands direct verifiable explanations.",
+    style_note="Abrupt, relentless interrogator detective who cross-examines contradictions and past identity claims.",
     portrait=INTERROGATION_GUARD_PORTRAIT,
 )
 
@@ -133,30 +133,75 @@ class InterrogationManager:
         state: GameState,
         *,
         is_final: bool = False,
+        in_room: bool = False,
         reason: Optional[str] = None,
+        memory: Optional[MemoryStore] = None,
     ) -> None:
-        """Activate formal or final interrogation and lock movement."""
+        """Activate formal interrogation room or final lockdown and lock movement.
+
+        When entering the Interrogation Room (`in_room=True` or `is_final=True`),
+        the Chief Investigator pulls the player's full recorded claim history so
+        they can cite any earlier statements verbatim.
+        """
         was_active = state.interrogation.active
         was_final = state.interrogation.is_final
+        was_in_room = state.interrogation.in_room
 
+        enter_room = bool(in_room or is_final)
         state.interrogation.active = True
+        if enter_room:
+            state.interrogation.in_room = True
+            state.interrogation.max_attempts = 2
+
+        # Interrogator has authority to pull all recorded claims & verbatim quotes
+        if enter_room and memory is not None:
+            all_claims: list[Claim] = []
+            for slot in (
+                "name",
+                "occupation",
+                "employer",
+                "hometown",
+                "reason_for_visit",
+                "relationships",
+                "other",
+            ):
+                all_claims.extend(memory.claims_in_slot(slot))
+            if all_claims:
+                turns = memory.evidence([c.id for c in all_claims])
+                state.interrogation.evidence_turn_ids = [t.turn_id for t in turns]
+                state.interrogation.evidence_quotes = [t.text for t in turns[-3:]]
+
         if is_final:
             state.interrogation.is_final = True
-            state.interrogation.max_attempts = 2
             if not was_final:
                 state.interrogation.attempts_used = 0
                 state.active_speaker = INTERROGATOR_GUARD.name
                 state.active_dialogue = INTERROGATOR_GUARD.opening_line
+        elif enter_room:
+            if not was_in_room:
+                state.interrogation.attempts_used = 0
+                state.active_speaker = INTERROGATOR_GUARD.name
+                if reason:
+                    state.active_dialogue = (
+                        f"Take a seat. {reason} I've pulled your full visitor record from "
+                        "every checkpoint—explain yourself clearly right now."
+                    )
+                else:
+                    state.active_dialogue = INTERROGATOR_GUARD.opening_line
         elif not was_active:
             state.interrogation.attempts_used = 0
 
-        if not was_active or (is_final and not was_final):
+        if not was_active or (is_final and not was_final) or (enter_room and not was_in_room):
             state.interrogations_triggered += 1
 
         if reason:
             state.interrogation.discrepancy_summary = reason
         if is_final:
             state.last_notice = "Suspicion reached 100 — Final Interrogation triggered!"
+        elif enter_room:
+            state.last_notice = (
+                f"Interrogation Room: {reason}" if reason else "Detained in the Interrogation Room. Explain yourself."
+            )
         else:
             state.last_notice = "Security interrogation initiated. Explain yourself."
 
@@ -192,14 +237,21 @@ class InterrogationManager:
             if pending is not None:
                 pending.resolved = True
                 pending.resolution_evaluation = "convincing"
+            was_in_room = state.interrogation.in_room
             state.interrogation.active = False
+            state.interrogation.in_room = False
             state.interrogation.is_final = False
             state.interrogation.pending_contradiction_id = None
             state.interrogation.attempts_used = 0
             state.interrogation.evidence_quotes = []
             state.interrogation.evidence_turn_ids = []
             state.interrogation.discrepancy_summary = ""
-            state.last_notice = "Your explanation convinced security."
+            loc_name = self._scenario.locations[state.current_location].name
+            state.last_notice = (
+                f"Interrogation resolved — returned to {loc_name}."
+                if was_in_room
+                else "Your explanation convinced security."
+            )
         elif verdict == "partially_convincing":
             if pending is not None:
                 pending.resolution_evaluation = "partially_convincing"
@@ -210,6 +262,16 @@ class InterrogationManager:
                     state.last_notice = "Final interrogation failed. You have been detained."
                 else:
                     state.last_notice = "Partially convincing, but the investigator still doubts you. One chance left."
+            elif state.interrogation.in_room:
+                if self._suspicion.is_final_interrogation(state.suspicion):
+                    self.trigger_interrogation(state, is_final=True)
+                elif state.interrogation.attempts_used >= state.interrogation.max_attempts:
+                    state.interrogation.active = False
+                    state.interrogation.in_room = False
+                    state.interrogation.pending_contradiction_id = None
+                    state.last_notice = "Released from interrogation under heavy scrutiny."
+                else:
+                    state.last_notice = "The investigator is still skeptical — clarify your story."
             else:
                 # Non-final questioning: release pending hold unless suspicion hit 100
                 if self._suspicion.is_final_interrogation(state.suspicion):
@@ -228,10 +290,19 @@ class InterrogationManager:
             if state.interrogation.is_final:
                 state.interrogation_failed = True
                 state.last_notice = "Final interrogation failed. Cover blown."
+            elif state.interrogation.in_room:
+                if (
+                    self._suspicion.is_final_interrogation(state.suspicion)
+                    or state.interrogation.attempts_used >= state.interrogation.max_attempts
+                ):
+                    state.interrogation_failed = True
+                    state.last_notice = "Interrogation failed. You have been captured."
+                else:
+                    state.last_notice = "Unconvincing explanation (+20 suspicion). One last chance before detention."
             elif self._suspicion.is_final_interrogation(state.suspicion):
                 self.trigger_interrogation(state, is_final=True)
             elif self._suspicion.is_mandatory_interrogation(state.suspicion):
-                self.trigger_interrogation(state, is_final=False)
+                self.trigger_interrogation(state, in_room=True)
             else:
                 state.interrogation.pending_contradiction_id = None
                 state.last_notice = "Unconvincing explanation raised suspicion."

@@ -3,7 +3,7 @@ import html
 import streamlit as st
 
 from ui.audio import queue_sfx
-from ui.data_provider import submit_response
+from ui.data_provider import submit_response, take_gold_urn
 
 MAX_RESPONSE_CHARS = 500  # generic safety cap only; the backend owns real limits
 
@@ -19,15 +19,31 @@ def _queue_send() -> None:
     st.session_state["response_text"] = ""
 
 
-def process_pending() -> bool:
-    """Execute a queued chat response after stable UI has rendered.
+def _queue_take_urn() -> None:
+    st.session_state["pending_take_urn"] = True
 
-    Returns True if a pending response was processed.
+
+def process_pending() -> bool:
+    """Execute queued chat response or Take Gold Urn action after stable UI paints.
+
+    Returns True if a pending action was processed.
     """
+    handled = False
+
+    if st.session_state.pop("pending_take_urn", False):
+        handled = True
+        try:
+            st.session_state["game"] = take_gold_urn()
+            st.session_state.pop("send_error", None)
+            queue_sfx("item_success")
+        except Exception:
+            st.session_state["send_error"] = "Could not take the Gold Urn. Please try again."
+
     text = st.session_state.pop("pending_response", None)
     if text is None:
-        return False
+        return handled
 
+    handled = True
     prev_game = st.session_state.get("game") or {}
     prev_susp = int((prev_game.get("suspicion") or {}).get("value", 0))
     prev_done = sum(1 for o in prev_game.get("objectives", []) if o.get("done"))
@@ -45,7 +61,7 @@ def process_pending() -> bool:
         # Restore the player's text on next fragment render so they can retry.
         st.session_state["send_error"] = "Could not send your response. Please try again."
         st.session_state["_restore_response_text"] = text
-    return True
+    return handled
 
 
 def render(game: dict, *, thinking_status: str | None = None) -> None:
@@ -66,6 +82,18 @@ def render(game: dict, *, thinking_status: str | None = None) -> None:
     evidence_quotes = interrogation.get("evidence_quotes") or []
     evidence_note = (
         f'On record: "{evidence_quotes[0]}"' if evidence_quotes else None
+    )
+    personality = dialogue.get("personality")
+    personality_pill = (
+        f'<span class="checkpoint-personality-pill">{esc(personality)}</span>'
+        if personality
+        else ""
+    )
+    interrogation_label = interrogation.get("status_label")
+    interrogation_pill = (
+        f'<span class="checkpoint-interrogation-pill">{esc(interrogation_label)}</span>'
+        if interrogation_label
+        else ""
     )
 
     feedback = "".join(
@@ -90,6 +118,7 @@ def render(game: dict, *, thinking_status: str | None = None) -> None:
         '<div class="checkpoint-speaker-left">'
         '<span class="checkpoint-live-dot" aria-hidden="true"></span>'
         f'<h2 class="checkpoint-speaker">{esc(dialogue["speaker"])}</h2>'
+        f'{personality_pill}{interrogation_pill}'
         "</div>"
         '<div class="checkpoint-wave" aria-hidden="true"><span></span><span></span><span></span><span></span></div>'
         "</div>"
@@ -97,6 +126,16 @@ def render(game: dict, *, thinking_status: str | None = None) -> None:
         f'<p class="checkpoint-utterance">{esc(dialogue["text"])}</p>{feedback}</div>'
         "</div></section>"
     )
+
+    if game.get("can_take_urn") and not thinking_status:
+        with st.container(key="take_urn_bar"):
+            st.button(
+                "Take the Gold Urn",
+                key="btn_take_gold_urn",
+                type="primary",
+                on_click=_queue_take_urn,
+                width="stretch",
+            )
 
     with st.container(key="response_bar"):
         with st.form("response_form", border=False):
@@ -107,7 +146,7 @@ def render(game: dict, *, thinking_status: str | None = None) -> None:
                     key="response_text",
                     height=64,
                     max_chars=MAX_RESPONSE_CHARS,
-                    placeholder="Answer the guard in your own words...",
+                    placeholder="Answer the guard... (Enter to send, Shift+Enter for new line)",
                     label_visibility="collapsed",
                 )
             with col_send:

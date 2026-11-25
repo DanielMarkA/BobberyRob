@@ -75,14 +75,6 @@ class RouteManager:
         if state.interrogation.active:
             return True, False, "Movement is locked during interrogation."
 
-        is_forward = route.condition is not None
-        if is_forward and state.suspicion >= 80:
-            return (
-                True,
-                False,
-                "Security alert is too high. De-escalate suspicion before advancing.",
-            )
-
         if route.condition is not None:
             cond = route.condition
             if cond.type == "objective_completed" and cond.objective_id:

@@ -174,6 +174,13 @@ def move_to_location(target_location: str) -> dict:
     return engine.get_ui_state()
 
 
+def take_gold_urn() -> dict:
+    """Take the Gold Urn after clearing vault security and return updated UI state."""
+    engine = _get_or_create_engine()
+    engine.take_gold_urn()
+    return engine.get_ui_state()
+
+
 def trigger_voluntary_exit() -> dict:
     """Trigger the Alternate Ending voluntary exit when conditions are met."""
     engine = _get_or_create_engine()

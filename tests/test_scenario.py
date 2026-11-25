@@ -21,10 +21,10 @@ class TestScenarioLoader(unittest.TestCase):
 
     def test_load_valid_scenario(self) -> None:
         self.assertEqual(self.scenario.scenario_id, "the_forgotten_artifact")
-        self.assertEqual(len(self.scenario.locations), 5)
-        self.assertEqual(len(self.scenario.guards), 5)
+        self.assertEqual(len(self.scenario.locations), 6)
+        self.assertEqual(len(self.scenario.guards), 6)
         self.assertEqual(len(self.scenario.items), 4)
-        self.assertEqual(len(self.scenario.objectives), 5)
+        self.assertEqual(len(self.scenario.objectives), 7)
         self.assertEqual(len(self.scenario.endings), 5)
 
     def test_unique_ids(self) -> None:

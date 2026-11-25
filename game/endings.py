@@ -59,8 +59,11 @@ class EndingEvaluator:
         if state.voluntary_exit and self.can_voluntary_exit(state):
             return self._scenario.endings.get("alternate_ending")
 
-        # 3. Mission completion endings (requires primary retrieve_artifact objective)
-        if "retrieve_artifact" not in state.completed_objectives:
+        # 3. Victory endings require BOTH taking the Gold Urn AND escaping the museum
+        if (
+            "take_gold_urn" not in state.completed_objectives
+            or "escape_with_urn" not in state.completed_objectives
+        ):
             return None
 
         unresolved_count = len(state.unresolved_contradictions)

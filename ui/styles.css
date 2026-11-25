@@ -1587,6 +1587,132 @@ header[data-testid="stHeader"],
   transform: scale(1.04);
 }
 
+/* Route navigation buttons under Location card */
+.st-key-checkpoint_routes {
+  display: flex;
+  flex-direction: column;
+  gap: calc(0.4 * var(--cp-step));
+}
+
+.st-key-checkpoint .st-key-checkpoint_routes button {
+  border-radius: var(--radius-sm);
+  padding: 0.48rem 0.72rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: border-color var(--t-fast) var(--ease-out),
+              background-color var(--t-fast) var(--ease-out),
+              box-shadow var(--t-fast) var(--ease-out);
+}
+
+.st-key-checkpoint .st-key-checkpoint_routes button[kind="primary"] {
+  border: 1px solid var(--amber-hi);
+  background: var(--amber);
+  color: var(--ink-on-amber);
+  box-shadow: 0 0 18px rgba(224, 159, 62, 0.25);
+}
+
+.st-key-checkpoint .st-key-checkpoint_routes button[kind="primary"]:hover {
+  background: var(--amber-hi);
+  color: var(--ink-on-amber);
+}
+
+.st-key-checkpoint .st-key-checkpoint_routes button[kind="secondary"] {
+  border: 1px solid var(--border-strong);
+  background: var(--surface-recessed);
+  color: var(--text);
+}
+
+.st-key-checkpoint .st-key-checkpoint_routes button[kind="secondary"]:hover:not(:disabled) {
+  border-color: var(--amber-border);
+  background: rgba(224, 159, 62, 0.08);
+  color: var(--amber-hi);
+}
+
+.st-key-checkpoint .st-key-checkpoint_routes button:disabled {
+  opacity: 0.45;
+  border-style: dashed;
+}
+
+/* Compact Restart / Main Menu controls below main 3-column stage */
+.st-key-checkpoint_actions {
+  max-inline-size: 22rem;
+  margin-block-start: 0.55rem;
+  margin-inline: auto;
+}
+
+.st-key-checkpoint_actions [data-testid="stHorizontalBlock"] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.st-key-checkpoint_actions button {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-recessed);
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.36rem 0.6rem;
+}
+
+.st-key-checkpoint_actions button:hover {
+  border-color: var(--amber-border);
+  color: var(--text);
+}
+
+/* Prominent Gold Urn retrieval action bar */
+.st-key-checkpoint .st-key-take_urn_bar button {
+  border: 1px solid var(--amber-hi);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--amber), var(--amber-hi));
+  color: var(--ink-on-amber);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.65rem 1rem;
+  box-shadow: 0 0 24px rgba(224, 159, 62, 0.38);
+}
+
+.st-key-checkpoint .st-key-take_urn_bar button:hover {
+  filter: brightness(1.06);
+  color: var(--ink-on-amber);
+}
+
+/* Guard personality & interrogation status pills */
+.checkpoint-personality-pill,
+.checkpoint-interrogation-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.14rem 0.46rem;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.checkpoint-personality-pill {
+  border: 1px solid var(--border-strong);
+  background: rgba(236, 232, 222, 0.06);
+  color: var(--text-secondary);
+}
+
+.checkpoint-interrogation-pill {
+  border: 1px solid var(--crimson-border);
+  background: var(--crimson-bg);
+  color: var(--crimson-text);
+}
+
 .checkpoint-objectives {
   display: flex;
   flex-direction: column;
@@ -1669,6 +1795,11 @@ header[data-testid="stHeader"],
   transform: translateX(-50%);
   filter: drop-shadow(0 16px 32px rgba(4, 6, 4, 0.65));
   pointer-events: none;
+}
+
+.checkpoint-portrait[src*="Last%20Guard.webp"] {
+  inset-block-start: 6%;
+  block-size: 92%;
 }
 
 .checkpoint-scrim {
@@ -2808,4 +2939,212 @@ div[class*="st-key-card_"] {
 .card-text {
   color: var(--text-secondary);
   line-height: 1.5;
+}
+
+/* ---------- Prompt Injection Jumpscare ---------- */
+@keyframes jumpscare-flash {
+  0%   { opacity: 0.96; background: #fff0f0; }
+  12%  { opacity: 0.92; background: #d61c1c; }
+  24%  { opacity: 0.25; background: #120404; }
+  36%  { opacity: 0.85; background: #b91414; }
+  55%  { opacity: 0.35; background: #0b0303; }
+  100% { opacity: 0;    background: transparent; }
+}
+
+@keyframes jumpscare-slam {
+  0% {
+    opacity: 0;
+    transform: scale(0.28) rotate(-4deg);
+    filter: brightness(2.6) contrast(1.8) saturate(1.8);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.22) rotate(2.5deg);
+    filter: brightness(1.35) contrast(1.35) saturate(1.35);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.04) rotate(0deg);
+    filter: brightness(1.02) contrast(1.18) saturate(1.12);
+  }
+}
+
+@keyframes jumpscare-shake {
+  0%, 100% { transform: translate(0, 0) scale(1.04); }
+  12%      { transform: translate(-14px, 8px) rotate(-2.5deg) scale(1.08); }
+  25%      { transform: translate(16px, -10px) rotate(2.8deg) scale(1.1); }
+  38%      { transform: translate(-12px, -6px) rotate(-2deg) scale(1.06); }
+  52%      { transform: translate(12px, 9px) rotate(2deg) scale(1.08); }
+  68%      { transform: translate(-7px, 4px) rotate(-1deg) scale(1.05); }
+  84%      { transform: translate(6px, -4px) rotate(1deg) scale(1.04); }
+}
+
+@keyframes jumpscare-copy-in {
+  0%   { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.stApp:has(.st-key-injection_jumpscare) {
+  background: radial-gradient(circle at 50% 34%, #350909 0%, #120404 46%, #050202 100%) !important;
+}
+
+.stApp:has(.st-key-injection_jumpscare) .block-container {
+  max-inline-size: min(46rem, 94vw);
+  padding-block: clamp(1rem, 3vh, 2rem);
+}
+
+.jumpscare-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 999995;
+  pointer-events: none;
+  animation: jumpscare-flash 0.72s ease-out forwards;
+}
+
+.st-key-injection_jumpscare {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.15rem;
+}
+
+.jumpscare-stage {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(220, 56, 56, 0.65);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(208, 36, 36, 0.34), rgba(14, 5, 5, 0.96) 68%),
+    #0a0303;
+  box-shadow:
+    0 0 70px rgba(214, 28, 28, 0.42),
+    0 24px 64px rgba(0, 0, 0, 0.86),
+    inset 0 0 60px rgba(0, 0, 0, 0.75);
+  padding: clamp(1.25rem, 3vw, 2rem) clamp(1.1rem, 3vw, 2rem) clamp(1.4rem, 3vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.jumpscare-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.025) 0px,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+}
+
+.jumpscare-frame {
+  position: relative;
+  width: min(26rem, 78vw);
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.45rem;
+}
+
+.jumpscare-portrait {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 28px rgba(220, 38, 38, 0.65)) drop-shadow(0 18px 34px rgba(0, 0, 0, 0.9));
+  animation:
+    jumpscare-slam 0.24s cubic-bezier(0.1, 0.92, 0.22, 1) forwards,
+    jumpscare-shake 0.42s ease-out 0.22s 2;
+  will-change: transform, filter;
+}
+
+.jumpscare-copy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  max-inline-size: 34rem;
+  animation: jumpscare-copy-in 0.35s ease-out 0.26s both;
+}
+
+.jumpscare-badge {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ff9c9c;
+  background: rgba(185, 20, 20, 0.32);
+  border: 1px solid rgba(240, 82, 82, 0.55);
+  border-radius: 999px;
+  padding: 0.28rem 0.85rem;
+}
+
+.jumpscare-title {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5.5vw, 3.1rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.05;
+  color: #fff2ef;
+  text-shadow: 0 0 24px rgba(230, 44, 44, 0.75);
+}
+
+.jumpscare-subtitle {
+  margin: 0;
+  color: #e6c9c5;
+  font-size: clamp(0.92rem, 1.5vw, 1.02rem);
+  line-height: 1.5;
+}
+
+.st-key-jumpscare_actions {
+  width: 100%;
+  max-inline-size: 30rem;
+  margin-inline: auto;
+  animation: jumpscare-copy-in 0.35s ease-out 0.34s both;
+}
+
+.st-key-jumpscare_actions [data-testid="stHorizontalBlock"] {
+  gap: 0.85rem;
+}
+
+.st-key-jumpscare_actions button {
+  min-block-size: 3rem !important;
+  font-family: var(--font-display) !important;
+  font-size: 0.96rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+.st-key-jumpscare_restart button {
+  background: linear-gradient(180deg, #cf2e2e 0%, #991818 100%) !important;
+  border: 1px solid #f06565 !important;
+  color: #fff7f5 !important;
+  box-shadow: 0 10px 26px rgba(190, 24, 24, 0.45) !important;
+}
+
+.st-key-jumpscare_restart button:hover {
+  background: linear-gradient(180deg, #e03a3a 0%, #b31d1d 100%) !important;
+  border-color: #ff9a9a !important;
+}
+
+.st-key-jumpscare_menu button {
+  background: rgba(24, 14, 14, 0.92) !important;
+  border: 1px solid rgba(235, 160, 160, 0.35) !important;
+  color: #f3dedb !important;
+}
+
+.st-key-jumpscare_menu button:hover {
+  border-color: rgba(240, 101, 101, 0.72) !important;
+  background: rgba(42, 18, 18, 0.96) !important;
 }
