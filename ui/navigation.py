@@ -16,7 +16,8 @@ RESULTS = "results"
 # Everything that belongs to ONE mission run. Cleared when a new mission starts.
 _MISSION_KEYS = (
     "game", "selected_item", "response_text", "send_error",
-    "item_error", "pending_response", "pending_item", "_mock_turn",
+    "item_error", "move_error", "pending_response", "pending_item",
+    "pending_move", "pending_voluntary_exit", "_mock_turn",
 )
 
 

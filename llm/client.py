@@ -53,6 +53,7 @@ class LLMClient:
         self.model = model or read_setting("BOBBERY_LLM_MODEL") or DEFAULT_MODEL
         self.max_retries = max_retries
         self.last_error: Optional[str] = None
+        self._use_chat_completions = False
 
         if sdk_client is not None:  # tests inject a fake here
             self._sdk = sdk_client
@@ -66,10 +67,14 @@ class LLMClient:
             )
         from openai import OpenAI
 
+        base_url = read_setting("OPENAI_BASE_URL")
+        # OpenAI-compatible proxies typically expose /chat/completions rather than /responses.
+        self._use_chat_completions = bool(base_url)
+
         # Retries are done here so that invalid JSON is retried too.
         self._sdk = OpenAI(
             api_key=api_key,
-            base_url=read_setting("OPENAI_BASE_URL"),
+            base_url=base_url,
             timeout=timeout,
             max_retries=0,
         )
@@ -130,7 +135,7 @@ class LLMClient:
         for attempt in range(self.max_retries + 1):
             try:
                 text = self._request(instructions, input_text, effort, text_format)
-                data = json.loads(text)
+                data = json.loads(_strip_json_fences(text) if self._use_chat_completions else text)
                 errors = check(data)
                 if not errors:
                     self.last_error = None
@@ -143,6 +148,9 @@ class LLMClient:
         return None
 
     def _request(self, instructions, input_text, effort, text_format) -> str:
+        if self._use_chat_completions:
+            return self._request_chat(instructions, input_text, effort, text_format)
+
         kwargs: dict[str, Any] = {
             "model": self.model,
             "instructions": instructions,
@@ -152,12 +160,64 @@ class LLMClient:
         }
         if text_format is not None:
             kwargs["text"] = {"format": text_format}
-        response = self._sdk.responses.create(**kwargs)
+        try:
+            response = self._sdk.responses.create(**kwargs)
+        except Exception as exc:
+            if type(exc).__name__ == "NotFoundError" and hasattr(self._sdk, "chat"):
+                log.info("Responses API returned 404; switching to Chat Completions API.")
+                self._use_chat_completions = True
+                return self._request_chat(instructions, input_text, effort, text_format)
+            raise
         text = getattr(response, "output_text", None)
         if not text:
             status = getattr(response, "status", "unknown")
             raise ValueError(f"no output text (status={status}, maybe a refusal)")
         return text
+
+    def _request_chat(self, instructions, input_text, effort, text_format) -> str:
+        system_content = instructions
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "max_tokens": 2000 if effort == "high" else 1000,
+        }
+        if text_format is not None:
+            schema_json = json.dumps(text_format["schema"], ensure_ascii=False)
+            system_content = (
+                f"{instructions}\n\n"
+                "You MUST respond with a single raw JSON object (no markdown fences) "
+                f"strictly conforming to this JSON Schema:\n{schema_json}"
+            )
+            kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": text_format["name"],
+                    "schema": text_format["schema"],
+                    "strict": True,
+                },
+            }
+        kwargs["messages"] = [
+            {"role": "system", "content": system_content},
+            {"role": "user", "content": input_text},
+        ]
+        response = self._sdk.chat.completions.create(**kwargs)
+        choices = getattr(response, "choices", None) or []
+        message = getattr(choices[0], "message", None) if choices else None
+        text = getattr(message, "content", None)
+        if not text:
+            raise ValueError("no message content returned from chat.completions")
+        return text
+
+
+def _strip_json_fences(text: str) -> str:
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        lines = cleaned.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        cleaned = "\n".join(lines).strip()
+    return cleaned
 
 
 def _backoff(attempt: int, max_retries: int) -> None:
