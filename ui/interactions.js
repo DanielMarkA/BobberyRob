@@ -9,9 +9,14 @@ function syncCheckpoint([scene, items]) {
       if (!bar) return;
       event.preventDefault();
       const button = bar.querySelector("button:not(:disabled)");
-      if (button && event.target.value.trim()) {
-        event.target.dispatchEvent(new Event("input", { bubbles: true }));
-        setTimeout(() => button.click(), 10);
+      if (button && event.target.value.trim() && !state.submitting) {
+        state.submitting = true;
+        const target = event.target;
+        setTimeout(() => {
+          state.submitting = false;
+          const liveButton = bar.querySelector("button:not(:disabled)");
+          if (liveButton && target.value.trim()) liveButton.click();
+        }, 10);
       }
     }, true);
 

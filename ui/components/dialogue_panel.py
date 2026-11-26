@@ -10,15 +10,26 @@ log = logging.getLogger(__name__)
 MAX_RESPONSE_CHARS = 500  # generic safety cap only; the backend owns real limits
 
 
+def _input_key() -> str:
+    nonce = st.session_state.get("_response_input_nonce", 0)
+    return "response_text" if nonce == 0 else f"response_text_{nonce}"
+
+
+def _form_key() -> str:
+    nonce = st.session_state.get("_response_input_nonce", 0)
+    return "response_form" if nonce == 0 else f"response_form_{nonce}"
+
+
 def _queue_send() -> None:
     """Send button callback: validate lightly, queue text, and clear input."""
-    text = st.session_state.get("response_text", "").strip()
+    key = _input_key()
+    text = st.session_state.get(key, "").strip()
     if not text:
         st.session_state["send_error"] = "Type a response before sending."
         return
     st.session_state.pop("send_error", None)
     st.session_state["pending_response"] = text
-    st.session_state["response_text"] = ""
+    st.session_state[key] = ""
 
 
 def _queue_take_urn() -> None:
@@ -59,7 +70,14 @@ def process_pending() -> bool:
 def render(game: dict, *, thinking_status: str | None = None) -> None:
     restore = st.session_state.pop("_restore_response_text", None)
     if restore is not None:
-        st.session_state["response_text"] = restore
+        # Bump the widget key on restore so Streamlit remounts a clean TextArea
+        # even if the user kept focus after clear_on_submit.
+        old_key = _input_key()
+        st.session_state.pop(old_key, None)
+        st.session_state["_response_input_nonce"] = (
+            st.session_state.get("_response_input_nonce", 0) + 1
+        )
+        st.session_state[_input_key()] = restore
 
     esc = html.escape
     dialogue = game["dialogue"]
@@ -124,12 +142,15 @@ def render(game: dict, *, thinking_status: str | None = None) -> None:
                 width="stretch",
             )
 
-    with st.container(key="response_bar"), st.form("response_form", border=False):
+    with (
+        st.container(key="response_bar"),
+        st.form(_form_key(), clear_on_submit=True, border=False),
+    ):
         col_input, col_send = st.columns(2, gap="small")
         with col_input:
             st.text_area(
                 "Your response",
-                key="response_text",
+                key=_input_key(),
                 height=64,
                 max_chars=MAX_RESPONSE_CHARS,
                 placeholder="Answer the guard... (Enter to send, Shift+Enter for new line)",

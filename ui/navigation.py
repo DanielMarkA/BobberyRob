@@ -16,6 +16,8 @@ RESULTS = "results"
 # Everything that belongs to ONE mission run. Cleared when a new mission starts.
 _MISSION_KEYS = (
     "_advance_deadline",
+    "_response_input_nonce",
+    "_restore_response_text",
     "game",
     "selected_item",
     "response_text",
@@ -33,6 +35,8 @@ _MISSION_KEYS = (
 
 def reset_mission_state() -> None:
     for key in _MISSION_KEYS:
+        st.session_state.pop(key, None)
+    for key in [k for k in st.session_state if isinstance(k, str) and k.startswith("response_text_")]:
         st.session_state.pop(key, None)
 
 
