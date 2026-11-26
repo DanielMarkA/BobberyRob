@@ -1,29 +1,26 @@
 """Guard memory and shared security reports for Bobbery Rob."""
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from memory.archive import Archive
 from memory.claims import ClaimStore
-from memory.models import Claim, Report, Turn
+from memory.models import Report
 
 
 class GuardMemory:
     """Manages shared security reports and guard viewpoints."""
 
-    def __init__(self, reports: Optional[list[Report]] = None) -> None:
-        self._reports: list[Report] = []
-        self._reports_by_id: dict[int, Report] = {}
-        if reports:
-            for report in reports:
-                self._reports.append(report)
-                self._reports_by_id[report.report_id] = report
+    def __init__(self, reports: list[Report] | None = None) -> None:
+        self._reports = list(reports or [])
+        self._next_id = max((r.report_id for r in self._reports), default=0) + 1
 
     def add_report(
         self,
         source_turn: int,
         summary: str,
-        shared_with: Optional[list[str]] = None,
-        turn_validator: Optional[Callable[[int], bool]] = None,
+        shared_with: list[str] | None = None,
+        turn_validator: Callable[[int], bool] | None = None,
     ) -> Report:
         """Add a shared security report."""
         if turn_validator is not None and not turn_validator(source_turn):
@@ -32,30 +29,19 @@ class GuardMemory:
             )
 
         guards = list(shared_with) if shared_with is not None else []
-        next_id = max(self._reports_by_id.keys(), default=0) + 1
         report = Report(
-            report_id=next_id,
+            report_id=self._next_id,
             source_turn=source_turn,
             summary=summary,
             shared_with=guards,
         )
         self._reports.append(report)
-        self._reports_by_id[report.report_id] = report
+        self._next_id += 1
         return report
-
-    def get_report(self, report_id: int) -> Report:
-        """Retrieve a report by ID."""
-        if report_id not in self._reports_by_id:
-            raise KeyError(f"Report with id {report_id} does not exist.")
-        return self._reports_by_id[report_id]
 
     def reports_for_guard(self, guard_id: str) -> list[Report]:
         """Return reports shared with this guard or with all guards (empty shared_with)."""
-        return [
-            r
-            for r in self._reports
-            if len(r.shared_with) == 0 or guard_id in r.shared_with
-        ]
+        return [r for r in self._reports if len(r.shared_with) == 0 or guard_id in r.shared_with]
 
     def guard_view(
         self,
@@ -82,10 +68,6 @@ class GuardMemory:
             "claims": witnessed_claims,
             "reports": relevant_reports,
         }
-
-    def all_reports(self) -> list[Report]:
-        """Return a copy of all stored reports."""
-        return list(self._reports)
 
     def to_dict(self) -> list[dict[str, Any]]:
         """Serialize all reports to plain dictionaries."""

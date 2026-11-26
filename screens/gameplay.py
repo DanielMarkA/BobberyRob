@@ -1,14 +1,22 @@
+import logging
 import os
 import time
 
 import streamlit as st
 
-from ui.audio import queue_sfx, render_audio_controller, reset_speech_dedup, track_for_gameplay
+from ui import interactions
 from ui.components import (
-    dialogue_panel, game_timer, header, inventory, mission_panel, suspicion_meter,
+    dialogue_panel,
+    game_timer,
+    header,
+    inventory,
+    mission_panel,
+    suspicion_meter,
 )
 from ui.data_provider import get_game_state, move_to_location, start_mission
-from ui.navigation import go_to, reset_mission_state, MAIN_MENU, RESULTS
+from ui.navigation import MAIN_MENU, RESULTS, go_to, reset_mission_state
+
+log = logging.getLogger(__name__)
 
 
 def _load_state() -> dict:
@@ -46,6 +54,18 @@ def _rerun_fragment() -> None:
         st.rerun()
 
 
+@st.fragment(run_every=0.5)
+def _advance_when_ready(target: str, ready_at: float) -> None:
+    # Only mounted while cleared. Leave the last reply/empty case visible
+    # without holding the Streamlit script thread during the scene change.
+    if time.monotonic() < ready_at:
+        return
+    if (st.session_state.get("game") or {}).get("auto_advance_to") == target:
+        st.session_state.pop("_advance_deadline", None)
+        st.session_state["game"] = move_to_location(target)
+        st.rerun(scope="app")
+
+
 @st.fragment
 def _render_checkpoint() -> None:
     """Isolated gameplay fragment so chat/items/moves never trigger full-app reloads."""
@@ -53,6 +73,7 @@ def _render_checkpoint() -> None:
         try:
             game = _load_state()
         except Exception:
+            log.exception("Could not load checkpoint")
             st.error("Could not load the game. Please try again.")
             st.button("Back to main menu", on_click=go_to, args=(MAIN_MENU,))
             return
@@ -92,16 +113,9 @@ def _render_checkpoint() -> None:
                 go_to(RESULTS)
                 st.rerun(scope="app")
             if updated.get("prompt_injection_detected"):
-                queue_sfx("jumpscare")
                 st.rerun(scope="app")
             _rerun_fragment()
 
-    # Sync BGM mood, one-shot event SFX, scene fade key, and AI guard neural speech
-    speak_target = (
-        (game["dialogue"]["speaker"], game["dialogue"]["text"], None)
-        if not thinking_status
-        else None
-    )
     scene_key = f"{game['location']['id']}|{'room' if (game.get('interrogation') or {}).get('in_room') else 'floor'}|{game.get('urn_taken', False)}"
     item_tooltips = {
         item["id"]: {
@@ -110,21 +124,20 @@ def _render_checkpoint() -> None:
         }
         for item in game.get("inventory", [])
     }
-    render_audio_controller(
-        track=track_for_gameplay(game),
-        speak_current=speak_target,
-        scene_key=scene_key,
-        item_tooltips=item_tooltips,
-    )
+    interactions.render(scene_key, item_tooltips)
 
     # Auto-advance smoothly after guard clearance (or taking the Gold Urn)
     auto_target = game.get("auto_advance_to")
     if auto_target and not thinking_status and not game.get("ended"):
-        if os.getenv("BOBBERY_FAST_TRANSITIONS") != "1":
-            time.sleep(2.0)
-        st.session_state["game"] = move_to_location(auto_target)
-        queue_sfx("move")
-        _rerun_fragment()
+        scene = (game["location"]["id"], auto_target)
+        pending = st.session_state.get("_advance_deadline")
+        if pending is None or pending[0] != scene:
+            delay = 0 if os.getenv("BOBBERY_FAST_TRANSITIONS") == "1" else 2
+            pending = (scene, time.monotonic() + delay)
+            st.session_state["_advance_deadline"] = pending
+        _advance_when_ready(auto_target, pending[1])
+    else:
+        st.session_state.pop("_advance_deadline", None)
 
 
 def _render_injection_jumpscare() -> None:
@@ -136,16 +149,16 @@ def _render_injection_jumpscare() -> None:
             '  <div class="jumpscare-vignette" aria-hidden="true"></div>'
             '  <div class="jumpscare-frame">'
             '    <img class="jumpscare-portrait" src="/app/static/images/Dishonesty.png" alt="Dishonesty detected" />'
-            '  </div>'
+            "  </div>"
             '  <div class="jumpscare-copy">'
             '    <span class="jumpscare-badge">SECURITY BREACH // SYSTEM TAMPERING</span>'
             '    <h1 class="jumpscare-title">YOU GOT CAUGHT LACKING.</h1>'
             '    <p class="jumpscare-subtitle">'
-            '      Prompt injection detected. You should have learned this through our lessons. '
-            ''
-            '    </p>'
-            '  </div>'
-            '</div>'
+            "      Prompt injection detected. You should have learned this through our lessons. "
+            ""
+            "    </p>"
+            "  </div>"
+            "</div>"
         )
         with st.container(key="jumpscare_actions"):
             col_restart, col_menu = st.columns(2)
@@ -158,7 +171,6 @@ def _render_injection_jumpscare() -> None:
                 ):
                     start_mission()
                     reset_mission_state()
-                    reset_speech_dedup()
                     st.rerun()
             with col_menu:
                 if st.button(
@@ -168,22 +180,20 @@ def _render_injection_jumpscare() -> None:
                 ):
                     start_mission()
                     reset_mission_state()
-                    reset_speech_dedup()
                     go_to(MAIN_MENU)
                     st.rerun()
 
-    render_audio_controller(
-        track="captured",
-        speak_current=None,
-        scene_key="prompt_injection_jumpscare",
-    )
+    interactions.render("prompt_injection_jumpscare")
 
 
 def render() -> None:
     try:
         game = _load_state()
     except Exception:
-        game = {}
+        log.exception("Could not load gameplay")
+        st.error("Could not load the game. Please try again.")
+        st.button("Back to main menu", on_click=go_to, args=(MAIN_MENU,))
+        return
     if game.get("prompt_injection_detected"):
         _render_injection_jumpscare()
         return
@@ -197,7 +207,6 @@ def render() -> None:
             if st.button("Restart Mission", key="cp_restart", width="stretch"):
                 start_mission()
                 reset_mission_state()
-                reset_speech_dedup()
                 st.rerun()
         with col_menu:
             if st.button("Main Menu", key="cp_main_menu", width="stretch"):
@@ -205,7 +214,6 @@ def render() -> None:
                 st.rerun()
 
     if os.getenv("BOBBERY_DEV_SHORTCUTS") == "1":
-        with st.container(key="dev_shortcuts"):
-            with st.expander("Dev shortcuts"):
-                for ending in ("success", "compromised", "captured"):
-                    st.button(f"End: {ending}", on_click=_end_mission, args=(ending,), width="stretch")
+        with st.container(key="dev_shortcuts"), st.expander("Dev shortcuts"):
+            for ending in ("success", "compromised", "captured"):
+                st.button(f"End: {ending}", on_click=_end_mission, args=(ending,), width="stretch")

@@ -1,10 +1,12 @@
 import html
+import logging
 
 import streamlit as st
 
-from ui.audio import queue_sfx
 from ui.components import objectives
 from ui.data_provider import move_to_location, request_curator_escort, trigger_voluntary_exit
+
+log = logging.getLogger(__name__)
 
 
 def _queue_move(target_location: str) -> None:
@@ -25,16 +27,11 @@ def process_pending() -> bool:
     target = st.session_state.pop("pending_move", None)
     if target is not None:
         handled = True
-        prev_loc = ((st.session_state.get("game") or {}).get("location") or {}).get("id")
         try:
-            new_game = move_to_location(target)
-            st.session_state["game"] = new_game
+            st.session_state["game"] = move_to_location(target)
             st.session_state.pop("move_error", None)
-            if (new_game.get("location") or {}).get("id") != prev_loc:
-                queue_sfx("move")
-            else:
-                queue_sfx("item_fail")
         except Exception:
+            log.exception("Location transition failed")
             st.session_state["move_error"] = "Could not move to that location."
 
     if st.session_state.pop("pending_voluntary_exit", False):
@@ -43,6 +40,7 @@ def process_pending() -> bool:
             st.session_state["game"] = trigger_voluntary_exit()
             st.session_state.pop("move_error", None)
         except Exception:
+            log.exception("Voluntary exit failed")
             st.session_state["move_error"] = "Could not complete voluntary exit."
 
     if st.session_state.pop("pending_escort", False):
@@ -50,8 +48,8 @@ def process_pending() -> bool:
         try:
             st.session_state["game"] = request_curator_escort()
             st.session_state.pop("move_error", None)
-            queue_sfx("item_success")
         except Exception:
+            log.exception("Escort request failed")
             st.session_state["move_error"] = "Could not request a curator escort."
     return handled
 
@@ -59,14 +57,14 @@ def process_pending() -> bool:
 def render(game: dict) -> None:
     esc = html.escape
 
-    with st.container(key="checkpoint_brief"):
-        with st.expander("Mission Briefing", expanded=True):
-            st.html(f'<p class="checkpoint-brief-text">{esc(game["mission_summary"])}</p>')
+    with st.container(key="checkpoint_brief"), st.expander("Mission Briefing", expanded=True):
+        st.html(f'<p class="checkpoint-brief-text">{esc(game["mission_summary"])}</p>')
 
     location = game["location"]
     thumbnail = (
         f'<div class="checkpoint-thumbnail"><img src="{esc(location["image"])}" alt=""></div>'
-        if location.get("image") else ""
+        if location.get("image")
+        else ""
     )
     st.html(
         '<section class="checkpoint-card checkpoint-location">'
@@ -96,7 +94,9 @@ def render(game: dict) -> None:
                 st.button(
                     f"{verb} {route['name']}",
                     key=f"move_{route['to_location']}",
-                    type="primary" if route.get("is_forward") and route.get("unlocked") else "secondary",
+                    type="primary"
+                    if route.get("is_forward") and route.get("unlocked")
+                    else "secondary",
                     disabled=not route.get("unlocked"),
                     help=route.get("reason") or None,
                     on_click=_queue_move,

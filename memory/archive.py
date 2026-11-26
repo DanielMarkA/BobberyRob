@@ -3,7 +3,7 @@
 Maintains an append-only sequence of conversation turns.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from memory.models import SPEAKERS, Turn
 
@@ -11,7 +11,7 @@ from memory.models import SPEAKERS, Turn
 class Archive:
     """Append-only store for dialogue turns."""
 
-    def __init__(self, turns: Optional[list[Turn]] = None) -> None:
+    def __init__(self, turns: list[Turn] | None = None) -> None:
         self._turns: list[Turn] = []
         self._turns_by_id: dict[int, Turn] = {}
         if turns:
@@ -23,14 +23,12 @@ class Archive:
         self,
         speaker: str,
         text: str,
-        guard_id: Optional[str] = None,
-        location_id: Optional[str] = None,
+        guard_id: str | None = None,
+        location_id: str | None = None,
     ) -> Turn:
         """Add a new turn to the archive with a sequential turn_id starting at 1."""
         if speaker not in SPEAKERS:
-            raise ValueError(
-                f"Invalid speaker '{speaker}'. Must be one of: {', '.join(SPEAKERS)}"
-            )
+            raise ValueError(f"Invalid speaker '{speaker}'. Must be one of: {', '.join(SPEAKERS)}")
 
         next_id = max(self._turns_by_id.keys(), default=0) + 1
         turn = Turn(
@@ -63,10 +61,6 @@ class Archive:
     def turns_for_guard(self, guard_id: str) -> list[Turn]:
         """Return all turns where the specified guard was present."""
         return [t for t in self._turns if t.guard_id == guard_id]
-
-    def all_turns(self) -> list[Turn]:
-        """Return a copy of all stored turns."""
-        return list(self._turns)
 
     def to_dict(self) -> list[dict[str, Any]]:
         """Serialize all turns to plain dictionaries."""

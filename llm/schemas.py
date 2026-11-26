@@ -12,7 +12,8 @@ Validation has two steps:
 """
 
 import copy
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from jsonschema import Draft202012Validator
 
@@ -197,7 +198,7 @@ def ground_evaluation(data: dict[str, Any], known_turn_ids: Iterable[int]) -> di
     return result
 
 
-def clean_dialogue(text: Optional[str]) -> Optional[str]:
+def clean_dialogue(text: str | None) -> str | None:
     """Trim a dialogue reply. Returns None when the reply is unusable."""
     if not isinstance(text, str):
         return None

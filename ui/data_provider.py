@@ -5,7 +5,7 @@ Connects UI screens and components to `GameEngine`, `ScenarioConfig`, and
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import streamlit as st
 
@@ -139,7 +139,7 @@ def start_mission() -> dict:
 
 def get_mission_elapsed_seconds() -> int:
     """Return the running mission's elapsed seconds."""
-    engine: Optional[GameEngine] = st.session_state.get("_engine")
+    engine: GameEngine | None = st.session_state.get("_engine")
     if engine is None:
         return 0
     return int(engine.elapsed_seconds())
@@ -208,11 +208,7 @@ def get_mission_result() -> dict:
         ending_id = _DEV_ENDING_MAP.get(dev_ending, "successful_infiltration")
         ending = engine.scenario.endings[ending_id]
         player = st.session_state.get("player") or {}
-        best = (
-            _get_db().get_personal_best(player["player_id"])
-            if player.get("player_id")
-            else None
-        )
+        best = _get_db().get_personal_best(player["player_id"]) if player.get("player_id") else None
         return engine.endings.build_result_payload(
             state=engine.state,
             ending=ending,
@@ -232,9 +228,5 @@ def get_mission_result() -> dict:
         return saved
 
     player = st.session_state.get("player") or {}
-    best = (
-        _get_db().get_personal_best(player["player_id"])
-        if player.get("player_id")
-        else None
-    )
+    best = _get_db().get_personal_best(player["player_id"]) if player.get("player_id") else None
     return engine.get_result(personal_best_seconds=best, is_new_record=False)

@@ -1,7 +1,5 @@
 """Location graph validation, route unlocking, and objective progression."""
 
-from typing import Optional
-
 from game.dialogue_pools import pick_opening
 from game.state import GameState, MoveResult
 from scenario.loader import GuardDef, ObjectiveDef, RouteDef, ScenarioConfig
@@ -26,10 +24,10 @@ class RouteManager:
             raise KeyError(f"No guard assigned to location '{location_id}'")
         return self._guards_by_location[location_id]
 
-    def objective_for_location(self, location_id: str) -> Optional[ObjectiveDef]:
+    def objective_for_location(self, location_id: str) -> ObjectiveDef | None:
         return self._objectives_by_target.get(location_id)
 
-    def find_route(self, from_location: str, to_location: str) -> Optional[RouteDef]:
+    def find_route(self, from_location: str, to_location: str) -> RouteDef | None:
         for route in self._scenario.routes:
             if route.from_location == from_location and route.to_location == to_location:
                 return route
@@ -48,7 +46,7 @@ class RouteManager:
         self,
         state: GameState,
         target_location: str,
-    ) -> tuple[bool, bool, Optional[str]]:
+    ) -> tuple[bool, bool, str | None]:
         """Validate whether moving to `target_location` is permitted.
 
         Returns `(valid_route, transition_allowed, reason_if_blocked)`.
@@ -86,10 +84,13 @@ class RouteManager:
                         False,
                         f"Complete '{obj.name}' before proceeding.",
                     )
-            elif cond.type == "item_required" and cond.item_id:
-                if state.inventory.get(cond.item_id, 0) <= 0:
-                    item = self._scenario.items[cond.item_id]
-                    return True, False, f"You need {item.name} to proceed."
+            elif (
+                cond.type == "item_required"
+                and cond.item_id
+                and state.inventory.get(cond.item_id, 0) <= 0
+            ):
+                item = self._scenario.items[cond.item_id]
+                return True, False, f"You need {item.name} to proceed."
 
         return True, True, None
 

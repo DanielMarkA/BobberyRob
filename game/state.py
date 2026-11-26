@@ -1,7 +1,7 @@
 """Typed state and result models for the Bobbery Rob game engine."""
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -19,7 +19,7 @@ class ContradictionRecord:
     guard_id: str = ""
     turn_id: int = 0
     resolved: bool = False
-    resolution_evaluation: Optional[str] = None
+    resolution_evaluation: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -49,7 +49,7 @@ class InterrogationState:
     active: bool = False
     in_room: bool = False
     is_final: bool = False
-    pending_contradiction_id: Optional[int] = None
+    pending_contradiction_id: int | None = None
     attempts_used: int = 0
     max_attempts: int = 2
     evidence_quotes: list[str] = field(default_factory=list)
@@ -118,8 +118,8 @@ class MoveResult:
     from_location: str
     target_location: str
     current_location_after: str
-    notice: Optional[str] = None
-    guard_opening_line: Optional[str] = None
+    notice: str | None = None
+    guard_opening_line: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -137,18 +137,18 @@ class TurnResult:
     suspicion_after: int
     suspicion_delta: int
     suspicion_label: str
-    notice: Optional[str] = None
+    notice: str | None = None
     claims_recorded: list[dict[str, Any]] = field(default_factory=list)
     corrections_recorded: list[dict[str, Any]] = field(default_factory=list)
     contradictions_flagged: list[dict[str, Any]] = field(default_factory=list)
-    explanation_evaluation: Optional[dict[str, Any]] = None
-    item_result: Optional[dict[str, Any]] = None
+    explanation_evaluation: dict[str, Any] | None = None
+    item_result: dict[str, Any] | None = None
     objectives_completed: list[str] = field(default_factory=list)
-    auto_advance_to: Optional[str] = None
+    auto_advance_to: str | None = None
     interrogation_active: bool = False
     interrogation_is_final: bool = False
     ended: bool = False
-    ending_id: Optional[str] = None
+    ending_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -180,19 +180,19 @@ class GameState:
     guard_confirmations_count: dict[str, int] = field(default_factory=dict)
     active_speaker: str = ""
     active_dialogue: str = ""
-    last_notice: Optional[str] = None
-    auto_advance_to: Optional[str] = None
+    last_notice: str | None = None
+    auto_advance_to: str | None = None
     interrogation_dismissal: bool = False
-    authorization_route: Optional[str] = None  # "invitation" | "escort" | None
+    authorization_route: str | None = None  # "invitation" | "escort" | None
     security_story_verified: bool = False
     active_checks: dict[str, str] = field(default_factory=dict)
     penalties: list[PenaltyRecord] = field(default_factory=list)
     ended: bool = False
-    ending_id: Optional[str] = None
+    ending_id: str | None = None
     started_at: float = 0.0
-    ended_at: Optional[float] = None
-    player_id: Optional[str] = None
-    codename: Optional[str] = None
+    ended_at: float | None = None
+    player_id: str | None = None
+    codename: str | None = None
 
     @property
     def unresolved_contradictions(self) -> list[ContradictionRecord]:
@@ -269,9 +269,7 @@ class GameState:
             urn_taken=bool(data.get("urn_taken", False)),
             voluntary_exit=bool(data.get("voluntary_exit", False)),
             consecutive_evasions=int(data.get("consecutive_evasions", 0)),
-            guard_turns_count={
-                k: int(v) for k, v in data.get("guard_turns_count", {}).items()
-            },
+            guard_turns_count={k: int(v) for k, v in data.get("guard_turns_count", {}).items()},
             guard_confirmations_count={
                 k: int(v) for k, v in data.get("guard_confirmations_count", {}).items()
             },

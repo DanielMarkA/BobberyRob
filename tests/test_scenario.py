@@ -51,11 +51,13 @@ class TestScenarioLoader(unittest.TestCase):
 
     def test_route_to_unknown_location_raises_error(self) -> None:
         bad_data = copy.deepcopy(self.raw_data)
-        bad_data["routes"].append({
-            "from_location": "museum_entrance",
-            "to_location": "nonexistent_room",
-            "condition": None,
-        })
+        bad_data["routes"].append(
+            {
+                "from_location": "museum_entrance",
+                "to_location": "nonexistent_room",
+                "condition": None,
+            }
+        )
         with self.assertRaises(ScenarioValidationError):
             validate_scenario(bad_data)
 

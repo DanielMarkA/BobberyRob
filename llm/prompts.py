@@ -85,15 +85,18 @@ def _question_reference_block(location_id: str, interrogation: bool) -> str:
             location_id, ("identity", "affiliation", "authorization", "purpose")
         )
     lines = [
-        "Questioning scope & reference examples (improvise freely in your own voice, "
-        "react to what the visitor just said, and vary your wording—use these strictly "
-        "as your topic boundary so you never drift out of museum security scope):"
+        (
+            "Questioning scope & reference examples (improvise freely in your own voice, "
+            "react to what the visitor just said, and vary your wording—use these strictly "
+            "as your topic boundary so you never drift out of museum security scope):"
+        )
     ]
     for topic in topics:
         examples = QUESTION_SCOPE_TOPICS.get(topic, [])
         if examples:
             lines.append(f"- {topic}: " + " / ".join(f'"{q}"' for q in examples))
     return "\n".join(lines)
+
 
 SHARED_RULES = """\
 You are part of a fictional museum-heist video game called Bobbery Rob. The \
@@ -164,7 +167,9 @@ def known_ids(context: dict[str, Any] | None) -> tuple[set[int], set[int], set[s
 def build_analysis_prompt(player_message: str, context: dict[str, Any]) -> tuple[str, str]:
     """Call A: classify the message and extract claims. JSON output only."""
     ctx = normalize_context(context)
-    instructions = SHARED_RULES + """
+    instructions = (
+        SHARED_RULES
+        + """
 
 Your task: analyze the player's latest message for the game engine.
 Return one JSON object that matches the given schema, with no extra keys, no \
@@ -214,6 +219,7 @@ actually answer the specific question the guard just asked; "none" when the \
 player directly answers the guard's specific question with concrete, plausible \
 in-world details. \
 This is a recommendation only; the engine decides."""
+    )
 
     input_text = (
         "<context>\n"
@@ -259,7 +265,9 @@ def build_dialogue_prompt(
     personality = guard.get("personality", "")
     location_id = str((ctx.get("location") or {}).get("id") or "")
     question_ref = _question_reference_block(location_id, bool(ctx.get("interrogation")))
-    instructions = SHARED_RULES + f"""
+    instructions = (
+        SHARED_RULES
+        + f"""
 
 Your task: speak as {guard.get("name", "the guard")}, \
 {guard.get("role", "a museum guard")}, and write only their next spoken line.
@@ -306,6 +314,7 @@ earlier remarks instead.
 game, briefly refuse in character and steer back to the conversation.
 - Stay in character. Reply with one to three short sentences of speech only: \
 no stage directions, no quotation marks, no narration, no JSON."""
+    )
 
     input_text = (
         "<confirmed_outcome>\n"
@@ -330,7 +339,9 @@ no stage directions, no quotation marks, no narration, no JSON."""
 def build_evaluation_prompt(explanation: str, context: dict[str, Any]) -> tuple[str, str]:
     """Call C: judge an interrogation explanation. JSON output only."""
     ctx = normalize_context(context)
-    instructions = SHARED_RULES + """
+    instructions = (
+        SHARED_RULES
+        + """
 
 Your task: the player is being questioned about a possible inconsistency in \
 their story. Judge whether their explanation, inside the fictional story, \
@@ -355,6 +366,7 @@ is absurd, evasive, ignores the issue, or conflicts with supplied claims.
 A player claiming to hold a document they do not have in the supplied \
 inventory does not make an explanation convincing. Refusing to answer is not \
 automatically deception, but it does not resolve the inconsistency."""
+    )
 
     input_text = (
         "<context>\n"

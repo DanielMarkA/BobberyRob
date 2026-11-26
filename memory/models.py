@@ -1,7 +1,7 @@
 """Data models and constants for the Bobbery Rob memory system."""
 
 from dataclasses import asdict, dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 SPEAKERS: tuple[str, ...] = ("player", "guard")
 
@@ -30,8 +30,8 @@ class Turn:
     turn_id: int
     speaker: str
     text: str
-    guard_id: Optional[str] = None
-    location_id: Optional[str] = None
+    guard_id: str | None = None
+    location_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -56,7 +56,7 @@ class Claim:
     value: str
     source_turn: int
     status: str = "asserted"
-    supersedes: Optional[int] = None
+    supersedes: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

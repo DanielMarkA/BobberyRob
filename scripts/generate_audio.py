@@ -4,10 +4,12 @@ Generates seamless looping background music tracks in `static/audio/bgm/`
 and tactile UI/event sound effects in `static/audio/sfx/`.
 
 Run once from repository root:
+    python -m pip install -r scripts/requirements-audio.txt
     python scripts/generate_audio.py
 """
 
 from pathlib import Path
+
 import numpy as np
 from scipy.io import wavfile
 from scipy.signal import butter, filtfilt
@@ -35,9 +37,10 @@ def bandpass(sig: np.ndarray, low_hz: float, high_hz: float, order: int = 2) -> 
     return filtfilt(b, a, sig)
 
 
-def add_stereo_delay(stereo: np.ndarray, delay_ms: float = 185.0, decay: float = 0.28) -> np.ndarray:
+def add_stereo_delay(
+    stereo: np.ndarray, delay_ms: float = 185.0, decay: float = 0.28
+) -> np.ndarray:
     """Wrap-around ping-pong echo for seamless looping ambience."""
-    n = stereo.shape[0]
     d = int(SR * delay_ms / 1000.0)
     out = stereo.copy()
     wet_l = np.roll(stereo[:, 1], d) * decay
@@ -49,7 +52,9 @@ def add_stereo_delay(stereo: np.ndarray, delay_ms: float = 185.0, decay: float =
     return out
 
 
-def mix_wrap(buf: np.ndarray, start_idx: int, sound: np.ndarray, pan: float = 0.0, gain: float = 1.0) -> None:
+def mix_wrap(
+    buf: np.ndarray, start_idx: int, sound: np.ndarray, pan: float = 0.0, gain: float = 1.0
+) -> None:
     """Add mono sound into stereo loop buffer with seamless modulo wrap-around."""
     n = buf.shape[0]
     length = len(sound)
@@ -114,7 +119,9 @@ def synth_pad(midi_notes: list[float], dur: float, velocity: float = 0.22) -> np
     return lowpass(sig * env, 950.0, order=2) * velocity
 
 
-def synth_brush(dur: float = 0.075, velocity: float = 0.12, rng: np.random.Generator = None) -> np.ndarray:
+def synth_brush(
+    dur: float = 0.075, velocity: float = 0.12, rng: np.random.Generator = None
+) -> np.ndarray:
     """Soft brushed jazz hi-hat / clockwork tick."""
     rng = rng or np.random.default_rng(42)
     n = int(SR * dur)
@@ -149,6 +156,7 @@ def save_wav(path: Path, audio: np.ndarray, target_peak: float = 0.72) -> None:
 # BGM Tracks
 # -----------------------------------------------------------------------------
 
+
 def build_bgm_menu() -> np.ndarray:
     """Smoky noir jazz dossier groove (Dm9 -> Gm9 -> Bbmaj7 -> A7b9, 88 BPM, 8 bars)."""
     bpm = 88.0
@@ -159,9 +167,9 @@ def build_bgm_menu() -> np.ndarray:
     rng = np.random.default_rng(101)
 
     chords = [
-        (0.0, [50, 57, 60, 64, 65]),   # Dm9
-        (4.0, [55, 62, 65, 69, 70]),   # Gm9
-        (8.0, [46, 53, 57, 60, 62]),   # Bbmaj9
+        (0.0, [50, 57, 60, 64, 65]),  # Dm9
+        (4.0, [55, 62, 65, 69, 70]),  # Gm9
+        (8.0, [46, 53, 57, 60, 62]),  # Bbmaj9
         (12.0, [45, 52, 55, 58, 61]),  # A7b9
     ]
     for start_b, notes in chords:
@@ -176,10 +184,22 @@ def build_bgm_menu() -> np.ndarray:
             mix_wrap(buf, offset, synth_rhodes(note, 1.4 * beat, 0.14), pan=0.2)
 
     bass_line = [
-        (0.0, 38), (1.5, 45), (2.0, 41), (3.0, 43),
-        (4.0, 43), (5.5, 46), (6.0, 50), (7.0, 48),
-        (8.0, 46), (9.5, 50), (10.0, 45), (11.0, 46),
-        (12.0, 45), (13.5, 43), (14.0, 40), (15.0, 39),
+        (0.0, 38),
+        (1.5, 45),
+        (2.0, 41),
+        (3.0, 43),
+        (4.0, 43),
+        (5.5, 46),
+        (6.0, 50),
+        (7.0, 48),
+        (8.0, 46),
+        (9.5, 50),
+        (10.0, 45),
+        (11.0, 46),
+        (12.0, 45),
+        (13.5, 43),
+        (14.0, 40),
+        (15.0, 39),
     ]
     for b, note in bass_line:
         mix_wrap(buf, int(b * beat * SR), synth_upright_bass(note, 1.2 * beat, 0.52), pan=-0.05)
@@ -203,9 +223,9 @@ def build_bgm_stealth() -> np.ndarray:
     rng = np.random.default_rng(202)
 
     pads = [
-        (0.0, [52, 59, 62, 66]),   # Em9
-        (4.0, [48, 55, 59, 64]),   # Cmaj7
-        (8.0, [45, 52, 55, 59]),   # Am9
+        (0.0, [52, 59, 62, 66]),  # Em9
+        (4.0, [48, 55, 59, 64]),  # Cmaj7
+        (8.0, [45, 52, 55, 59]),  # Am9
         (12.0, [47, 54, 57, 63]),  # B7
     ]
     for b, notes in pads:
@@ -213,20 +233,44 @@ def build_bgm_stealth() -> np.ndarray:
 
     # Sneaky plucked bass ostinato
     bass = [
-        (0.0, 40), (1.0, 40), (1.5, 43), (2.5, 47), (3.5, 45),
-        (4.0, 36), (5.0, 36), (5.5, 40), (6.5, 43), (7.5, 42),
-        (8.0, 33), (9.0, 33), (9.5, 36), (10.5, 40), (11.5, 38),
-        (12.0, 35), (13.0, 35), (13.5, 38), (14.5, 42), (15.5, 41),
+        (0.0, 40),
+        (1.0, 40),
+        (1.5, 43),
+        (2.5, 47),
+        (3.5, 45),
+        (4.0, 36),
+        (5.0, 36),
+        (5.5, 40),
+        (6.5, 43),
+        (7.5, 42),
+        (8.0, 33),
+        (9.0, 33),
+        (9.5, 36),
+        (10.5, 40),
+        (11.5, 38),
+        (12.0, 35),
+        (13.0, 35),
+        (13.5, 38),
+        (14.5, 42),
+        (15.5, 41),
     ]
     for b, note in bass:
         mix_wrap(buf, int(b * beat * SR), synth_upright_bass(note, 0.75 * beat, 0.56), pan=-0.06)
 
     # Sparse glass/museum marimba-like Rhodes motif
     motif = [
-        (0.5, 71), (2.0, 74), (3.0, 71),
-        (4.5, 67), (6.0, 71), (7.0, 67),
-        (8.5, 69), (10.0, 72), (11.0, 69),
-        (12.5, 66), (14.0, 71), (15.0, 69),
+        (0.5, 71),
+        (2.0, 74),
+        (3.0, 71),
+        (4.5, 67),
+        (6.0, 71),
+        (7.0, 67),
+        (8.5, 69),
+        (10.0, 72),
+        (11.0, 69),
+        (12.5, 66),
+        (14.0, 71),
+        (15.0, 69),
     ]
     for b, note in motif:
         mix_wrap(buf, int(b * beat * SR), synth_rhodes(note, 1.3 * beat, 0.19), pan=0.3)
@@ -234,7 +278,12 @@ def build_bgm_stealth() -> np.ndarray:
     # Subtle clockwork security tick
     for b in range(total_beats * 2):
         vel = 0.085 if b % 4 == 0 else 0.04
-        mix_wrap(buf, int(b * 0.5 * beat * SR), synth_brush(0.045, vel, rng), pan=-0.25 if b % 2 == 0 else 0.25)
+        mix_wrap(
+            buf,
+            int(b * 0.5 * beat * SR),
+            synth_brush(0.045, vel, rng),
+            pan=-0.25 if b % 2 == 0 else 0.25,
+        )
 
     buf = add_stereo_delay(buf, delay_ms=beat * 500.0, decay=0.26)
     return lowpass(buf, 6800.0, order=2)
@@ -250,9 +299,9 @@ def build_bgm_tension() -> np.ndarray:
     rng = np.random.default_rng(303)
 
     pads = [
-        (0.0, [48, 55, 58, 63]),   # Cm7
-        (4.0, [49, 55, 58, 61]),   # Db dim tension
-        (8.0, [48, 55, 58, 62]),   # Cm9
+        (0.0, [48, 55, 58, 63]),  # Cm7
+        (4.0, [49, 55, 58, 61]),  # Db dim tension
+        (8.0, [48, 55, 58, 62]),  # Cm9
         (12.0, [43, 50, 53, 59]),  # G7
     ]
     for b, notes in pads:
@@ -276,7 +325,12 @@ def build_bgm_tension() -> np.ndarray:
     # High tense shimmer ticks
     for step in range(total_beats * 2):
         vel = 0.09 if step % 2 == 0 else 0.045
-        mix_wrap(buf, int(step * 0.5 * beat * SR), synth_brush(0.04, vel, rng), pan=0.28 if step % 2 else -0.28)
+        mix_wrap(
+            buf,
+            int(step * 0.5 * beat * SR),
+            synth_brush(0.04, vel, rng),
+            pan=0.28 if step % 2 else -0.28,
+        )
 
     buf = add_stereo_delay(buf, delay_ms=beat * 375.0, decay=0.25)
     return lowpass(buf, 6200.0, order=2)
@@ -292,16 +346,23 @@ def build_bgm_victory() -> np.ndarray:
     rng = np.random.default_rng(404)
 
     chords = [
-        (0.0, [53, 57, 60, 64, 67]),   # Fmaj9
-        (4.0, [55, 59, 62, 65, 69]),   # G13
-        (8.0, [52, 55, 59, 62, 66]),   # Em9
+        (0.0, [53, 57, 60, 64, 67]),  # Fmaj9
+        (4.0, [55, 59, 62, 65, 69]),  # G13
+        (8.0, [52, 55, 59, 62, 66]),  # Em9
         (12.0, [45, 52, 55, 59, 64]),  # Am9
     ]
     for b, notes in chords:
         mix_wrap(buf, int(b * beat * SR), synth_pad(notes[:4], 4.2 * beat, 0.22), pan=0.0)
         for i, note in enumerate(notes):
-            mix_wrap(buf, int((b * beat + i * 0.03) * SR), synth_rhodes(note, 3.8 * beat, 0.26), pan=-0.2 + 0.1 * i)
-        mix_wrap(buf, int(b * beat * SR), synth_upright_bass(notes[0] - 12, 3.2 * beat, 0.48), pan=0.0)
+            mix_wrap(
+                buf,
+                int((b * beat + i * 0.03) * SR),
+                synth_rhodes(note, 3.8 * beat, 0.26),
+                pan=-0.2 + 0.1 * i,
+            )
+        mix_wrap(
+            buf, int(b * beat * SR), synth_upright_bass(notes[0] - 12, 3.2 * beat, 0.48), pan=0.0
+        )
 
     for b in range(total_beats):
         mix_wrap(buf, int(b * beat * SR), synth_brush(0.06, 0.06, rng), pan=0.18)
@@ -327,7 +388,9 @@ def build_bgm_captured() -> np.ndarray:
     for b, notes in chords:
         mix_wrap(buf, int(b * beat * SR), synth_pad(notes, 4.4 * beat, 0.28), pan=0.0)
         mix_wrap(buf, int(b * beat * SR), synth_rhodes(notes[-1] + 12, 3.6 * beat, 0.18), pan=0.15)
-        mix_wrap(buf, int(b * beat * SR), synth_upright_bass(notes[0] - 12, 3.5 * beat, 0.5), pan=0.0)
+        mix_wrap(
+            buf, int(b * beat * SR), synth_upright_bass(notes[0] - 12, 3.5 * beat, 0.5), pan=0.0
+        )
 
     buf = add_stereo_delay(buf, delay_ms=beat * 500.0, decay=0.3)
     return lowpass(buf, 4800.0, order=2)
@@ -336,6 +399,7 @@ def build_bgm_captured() -> np.ndarray:
 # -----------------------------------------------------------------------------
 # UI & Event SFX
 # -----------------------------------------------------------------------------
+
 
 def build_sfx_hover() -> np.ndarray:
     """Ultra-subtle tactile hover tick (38 ms)."""
@@ -406,8 +470,12 @@ def build_sfx_move() -> np.ndarray:
     n = int(SR * dur)
     buf = np.zeros((n, 2), dtype=np.float64)
     rng = np.random.default_rng(19)
-    step1 = lowpass(rng.standard_normal(int(SR * 0.09)), 420.0, order=2) * np.exp(-np.arange(int(SR * 0.09)) / SR * 35.0)
-    step2 = lowpass(rng.standard_normal(int(SR * 0.09)), 380.0, order=2) * np.exp(-np.arange(int(SR * 0.09)) / SR * 35.0)
+    step1 = lowpass(rng.standard_normal(int(SR * 0.09)), 420.0, order=2) * np.exp(
+        -np.arange(int(SR * 0.09)) / SR * 35.0
+    )
+    step2 = lowpass(rng.standard_normal(int(SR * 0.09)), 380.0, order=2) * np.exp(
+        -np.arange(int(SR * 0.09)) / SR * 35.0
+    )
     mix_wrap(buf, 0, step1 * 0.9, pan=-0.15)
     mix_wrap(buf, int(0.13 * SR), step2 * 0.8, pan=0.15)
     return buf

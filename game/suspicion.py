@@ -67,9 +67,6 @@ class SuspicionManager:
     def label_for(self, value: int) -> str:
         return self.threshold_for(value).label
 
-    def tier_for(self, value: int) -> str:
-        return self.threshold_for(value).tier
-
     def is_mandatory_interrogation(self, value: int) -> bool:
         return self.clamp(value) >= 60
 

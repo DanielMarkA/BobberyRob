@@ -36,7 +36,7 @@ def render(suspicion: dict) -> None:
         f'<section class="checkpoint-card checkpoint-suspicion tier-{level}">'
         '<div class="checkpoint-card-head">'
         '<h2 id="checkpoint-suspicion-title" class="checkpoint-heading checkpoint-icon-suspicion">'
-        'Suspicion</h2>'
+        "Suspicion</h2>"
         f'<span class="susp-value" aria-hidden="true">{value:.0f}<span class="susp-denom">/100</span></span>'
         "</div>"
         '<div class="susp-meter-wrap">'
@@ -51,6 +51,6 @@ def render(suspicion: dict) -> None:
         "</div></div>"
         '<p class="susp-label">'
         '<span class="susp-dot" aria-hidden="true"></span>'
-        f'<span>{html.escape(str(suspicion["label"]))}</span></p>'
+        f"<span>{html.escape(str(suspicion['label']))}</span></p>"
         "</section>"
     )

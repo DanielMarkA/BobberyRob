@@ -4,7 +4,6 @@ import json
 import sys
 import unittest
 from pathlib import Path
-from typing import Any
 
 # Ensure project root is on sys.path for direct script execution
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -98,7 +97,7 @@ class ConversationScriptValidator(unittest.TestCase):
             guard_id=script["turns"][0]["guard_id"],
             location_id=script["turns"][0]["location_id"],
         )
-        c1 = store.add_claim(slot="occupation", value="art historian", source_turn=t1.turn_id)
+        store.add_claim(slot="occupation", value="art historian", source_turn=t1.turn_id)
 
         # Turn 2
         t2 = store.add_turn(
@@ -154,7 +153,7 @@ def main() -> None:
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
     if not result.wasSuccessful():
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

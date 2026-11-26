@@ -3,9 +3,9 @@
 import re
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 DEFAULT_DB_PATH = Path(__file__).resolve().parent / "bobbery_rob.db"
 
@@ -15,9 +15,9 @@ _CODENAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 class GameDatabase:
     """Lightweight SQLite store for Bobbery Rob codenames and ranked runs."""
 
-    def __init__(self, db_path: Union[str, Path, None] = None) -> None:
+    def __init__(self, db_path: str | Path | None = None) -> None:
         self._db_path = str(DEFAULT_DB_PATH if db_path is None else db_path)
-        self._memory_conn: Optional[sqlite3.Connection] = None
+        self._memory_conn: sqlite3.Connection | None = None
         if self._db_path == ":memory:":
             self._memory_conn = sqlite3.connect(":memory:", check_same_thread=False)
             self._memory_conn.row_factory = sqlite3.Row
@@ -101,7 +101,7 @@ class GameDatabase:
                 return {"ok": True, "player_id": row["player_id"], "error": None}
 
             player_id = f"plr-{uuid.uuid4().hex[:12]}"
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             conn.execute(
                 "INSERT INTO players (player_id, codename, created_at) VALUES (?, ?, ?)",
                 (player_id, name, now),
@@ -111,7 +111,7 @@ class GameDatabase:
         finally:
             self._close(conn)
 
-    def get_personal_best(self, player_id: str) -> Optional[float]:
+    def get_personal_best(self, player_id: str) -> float | None:
         """Return the player's fastest ranked adjusted time, or None."""
         conn = self._connect()
         try:
@@ -136,9 +136,9 @@ class GameDatabase:
         codename: str,
         scenario_id: str,
         ending_id: str,
-        category: Optional[str],
+        category: str | None,
         raw_seconds: float,
-        adjusted_seconds: Optional[float],
+        adjusted_seconds: float | None,
         final_suspicion: int,
         objectives_done: int,
         objectives_total: int,
@@ -151,7 +151,7 @@ class GameDatabase:
 
         conn = self._connect()
         try:
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             cursor = conn.execute(
                 """
                 INSERT INTO runs (
@@ -210,7 +210,7 @@ class GameDatabase:
                 {
                     "rank": idx,
                     "player": row["codename"],
-                    "time_seconds": int(round(float(row["best_seconds"]))),
+                    "time_seconds": round(float(row["best_seconds"])),
                 }
                 for idx, row in enumerate(rows, start=1)
             ]

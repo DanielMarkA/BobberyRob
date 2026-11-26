@@ -2,12 +2,12 @@
 
 import re
 import time
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from game.dialogue_pools import (
     pick_item_reaction,
     pick_neutral_fallback,
-    pick_opening,
 )
 from game.endings import EndingEvaluator
 from game.interrogation import (
@@ -20,6 +20,7 @@ from game.routes import RouteManager
 from game.state import GameState, ItemUseResult, MoveResult, PenaltyRecord, TurnResult
 from game.suspicion import SuspicionManager
 from llm import get_client
+from llm.budget import turn_budget
 from memory.models import SLOTS, Claim, Turn
 from memory.store import MemoryStore
 from scenario.loader import EndingDef, GuardDef, ScenarioConfig, load_scenario
@@ -172,7 +173,7 @@ _NEGATION_OR_QUESTION_PREFIX = re.compile(
 )
 
 
-def detect_hostile_or_incriminating(text: str) -> Optional[str]:
+def detect_hostile_or_incriminating(text: str) -> str | None:
     """Return a security alert reason if the player makes an overt threat or confession.
 
     Judges meaning rather than raw keywords: explicit denials ("I'm not here to steal
@@ -231,6 +232,7 @@ def _is_bare_yes_no(text: str) -> bool:
     """Return True for bare yes/no/confirmation replies that provide no concrete detail."""
     return bool(_BARE_YES_NO_PATTERN.match((text or "").strip()))
 
+
 _META_TERM_REPLACEMENTS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\b(?:the\s+)?(?:supplied\s+)?inventory\b", re.IGNORECASE), "their possession"),
     (re.compile(r"\bgame\s+engine\b", re.IGNORECASE), "security registry"),
@@ -239,17 +241,68 @@ _META_TERM_REPLACEMENTS: tuple[tuple[re.Pattern[str], str], ...] = (
 
 _STOP_TOKENS = frozenset(
     {
-        "the", "a", "an", "of", "for", "at", "in", "on", "to", "from", "with", "my",
-        "dr", "mr", "mrs", "ms", "prof", "professor", "senior", "junior", "visiting",
-        "chief", "head", "lead", "master", "doctoral", "independent", "museum", "university",
+        "the",
+        "a",
+        "an",
+        "of",
+        "for",
+        "at",
+        "in",
+        "on",
+        "to",
+        "from",
+        "with",
+        "my",
+        "dr",
+        "mr",
+        "mrs",
+        "ms",
+        "prof",
+        "professor",
+        "senior",
+        "junior",
+        "visiting",
+        "chief",
+        "head",
+        "lead",
+        "master",
+        "doctoral",
+        "independent",
+        "museum",
+        "university",
     }
 )
 
 # Compatible occupation families so harmless paraphrases ("historian" vs "researcher") are never penalized.
 _COMPATIBLE_OCCUPATION_GROUPS: tuple[frozenset[str], ...] = (
-    frozenset({"historian", "researcher", "scholar", "curator", "archivist", "academic", "conservationist", "conservator", "specialist", "fellow", "archaeologist", "antiquarian"}),
+    frozenset(
+        {
+            "historian",
+            "researcher",
+            "scholar",
+            "curator",
+            "archivist",
+            "academic",
+            "conservationist",
+            "conservator",
+            "specialist",
+            "fellow",
+            "archaeologist",
+            "antiquarian",
+        }
+    ),
     frozenset({"journalist", "reporter", "writer", "critic", "editor", "press", "correspondent"}),
-    frozenset({"electrician", "technician", "engineer", "contractor", "maintenance", "installer", "mechanic"}),
+    frozenset(
+        {
+            "electrician",
+            "technician",
+            "engineer",
+            "contractor",
+            "maintenance",
+            "installer",
+            "mechanic",
+        }
+    ),
     frozenset({"donor", "patron", "collector", "investor", "benefactor", "vip", "guest"}),
     frozenset({"inspector", "auditor", "appraiser", "valuer", "assessor", "consultant"}),
 )
@@ -320,13 +373,13 @@ class GameEngine:
 
     def __init__(
         self,
-        scenario: Optional[ScenarioConfig] = None,
+        scenario: ScenarioConfig | None = None,
         llm_client: Any = None,
-        memory: Optional[MemoryStore] = None,
-        state: Optional[GameState] = None,
+        memory: MemoryStore | None = None,
+        state: GameState | None = None,
         *,
-        player_id: Optional[str] = None,
-        codename: Optional[str] = None,
+        player_id: str | None = None,
+        codename: str | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.scenario = scenario if scenario is not None else load_scenario()
@@ -398,8 +451,8 @@ class GameEngine:
 
     def build_llm_context(
         self,
-        current_turn_id: Optional[int] = None,
-        extra_claim_ids: Optional[list[int]] = None,
+        current_turn_id: int | None = None,
+        extra_claim_ids: list[int] | None = None,
         *,
         full_history_for_analysis: bool = False,
     ) -> dict[str, Any]:
@@ -475,6 +528,7 @@ class GameEngine:
 
     # ------------------------------------------------------------ core actions
 
+    @turn_budget()
     def submit_message(self, player_text: str) -> TurnResult:
         """Process one natural-language player turn through the 2-step pipeline."""
         text = (player_text or "").strip()
@@ -482,17 +536,13 @@ class GameEngine:
         susp_before = self.state.suspicion
 
         if self.state.ended:
-            return self._rejected_turn(
-                "The mission has already concluded.", guard, susp_before
-            )
+            return self._rejected_turn("The mission has already concluded.", guard, susp_before)
         if self.state.prompt_injection_detected:
             return self._rejected_turn(
                 "Session terminated due to system tampering.", guard, susp_before
             )
         if not text:
-            return self._rejected_turn(
-                "Type a response before sending.", guard, susp_before
-            )
+            return self._rejected_turn("Type a response before sending.", guard, susp_before)
 
         # 1. Archive player's verbatim words first
         player_turn = self.memory.add_turn(
@@ -506,14 +556,10 @@ class GameEngine:
         if is_prompt_injection(text):
             self.state.prompt_injection_detected = True
             self.state.auto_advance_to = None
-            reply = (
-                "Nice try. Tampering with museum security protocols terminates your mission immediately."
-            )
+            reply = "Nice try. Tampering with museum security protocols terminates your mission immediately."
             self.state.active_speaker = guard.name
             self.state.active_dialogue = reply
-            self.state.last_notice = (
-                "SYSTEM TAMPERING DETECTED — Prompt injection attempt blocked."
-            )
+            self.state.last_notice = "SYSTEM TAMPERING DETECTED — Prompt injection attempt blocked."
             self.memory.add_turn(
                 speaker="guard",
                 text=reply,
@@ -561,9 +607,7 @@ class GameEngine:
             current_turn_id=player_turn.turn_id,
             full_history_for_analysis=(loc_level >= 3),
         )
-        return self._handle_normal_turn(
-            text, player_turn, guard, analysis_context, susp_before
-        )
+        return self._handle_normal_turn(text, player_turn, guard, analysis_context, susp_before)
 
     def use_item(self, item_id: str) -> ItemUseResult:
         """Validate and execute item presentation.
@@ -606,9 +650,7 @@ class GameEngine:
                 notice=notice,
             )
 
-        result = self.inventory.use_item(
-            self.state, item_id, guard, self.state.current_location
-        )
+        result = self.inventory.use_item(self.state, item_id, guard, self.state.current_location)
 
         if result.outcome == "rejected":
             self.state.last_notice = result.notice
@@ -629,9 +671,7 @@ class GameEngine:
         result.suspicion_delta = applied_delta
 
         if result.outcome == "failure":
-            self.state.penalties.append(
-                PenaltyRecord(label="Failed Access Penalty", seconds=30)
-            )
+            self.state.penalties.append(PenaltyRecord(label="Failed Access Penalty", seconds=30))
             self.memory.add_report(
                 source_turn=player_turn.turn_id,
                 summary=f"Security violation ({item_name}) with {guard.name}: {result.notice}",
@@ -747,12 +787,12 @@ class GameEngine:
         loc = self.scenario.locations[self.state.current_location]
         self.state.active_speaker = guard.name
         self.state.active_dialogue = (
-            f"Back from interrogation, I see. Let's pick up where we left off — "
-            f"give me a straight answer before I decide whether to clear you."
+            "Back from interrogation, I see. Let's pick up where we left off — "
+            "give me a straight answer before I decide whether to clear you."
         )
         self.state.last_notice = f"Returned to {loc.name}."
 
-    def trigger_voluntary_exit(self) -> Optional[EndingDef]:
+    def trigger_voluntary_exit(self) -> EndingDef | None:
         """Trigger the Alternate Ending if the player meets its conditions."""
         if not self.endings.can_voluntary_exit(self.state):
             self.state.last_notice = "You cannot conclude via academic exit right now."
@@ -765,9 +805,15 @@ class GameEngine:
         if self.state.ended or self.state.prompt_injection_detected:
             return {"ok": False, "notice": "The mission has already concluded."}
         if self.state.interrogation.active:
-            return {"ok": False, "notice": "Complete security questioning before requesting an escort."}
+            return {
+                "ok": False,
+                "notice": "Complete security questioning before requesting an escort.",
+            }
         if self.state.current_location != "security_checkpoint":
-            return {"ok": False, "notice": "Curator escorts are only logged at the Security Checkpoint."}
+            return {
+                "ok": False,
+                "notice": "Curator escorts are only logged at the Security Checkpoint.",
+            }
         if self.state.authorization_route is not None:
             return {"ok": False, "notice": "You already have restricted authorization logged."}
 
@@ -775,9 +821,7 @@ class GameEngine:
         self.state.authorization_route = "escort"
         if guard.id not in self.state.guard_cover_supported:
             self.state.guard_cover_supported.append(guard.id)
-        self.state.penalties.append(
-            PenaltyRecord(label="Curator Escort Log Delay", seconds=25)
-        )
+        self.state.penalties.append(PenaltyRecord(label="Curator Escort Log Delay", seconds=25))
         turn = self.memory.add_turn(
             speaker="player",
             text="[Signed the Night Curator Escort Log at Security Checkpoint]",
@@ -805,9 +849,7 @@ class GameEngine:
                 "Alright, I've logged your Night Curator Escort request. Before I issue your Access Card, "
                 "explain clearly why your visit requires restricted access tonight."
             )
-            self.state.last_notice = (
-                "Curator escort authorized (+25s). Now explain why your visit requires restricted access."
-            )
+            self.state.last_notice = "Curator escort authorized (+25s). Now explain why your visit requires restricted access."
 
         self.state.active_speaker = guard.name
         self.state.active_dialogue = reply
@@ -824,19 +866,16 @@ class GameEngine:
         new_susp, applied = self.suspicion.apply_event(self.state.suspicion, event_name)
         self.state.suspicion = new_susp
         if self.suspicion.is_final_interrogation(self.state.suspicion):
-            self.interrogation.trigger_interrogation(
-                self.state, is_final=True, memory=self.memory
-            )
-        elif self.suspicion.is_mandatory_interrogation(self.state.suspicion):
-            if not self.state.interrogation.active and applied > 0:
-                self.interrogation.trigger_interrogation(
-                    self.state, in_room=True, memory=self.memory
-                )
+            self.interrogation.trigger_interrogation(self.state, is_final=True, memory=self.memory)
+        elif (
+            self.suspicion.is_mandatory_interrogation(self.state.suspicion)
+            and not self.state.interrogation.active
+            and applied > 0
+        ):
+            self.interrogation.trigger_interrogation(self.state, in_room=True, memory=self.memory)
         return applied
 
-    def validate_accusation(
-        self, claim_ids: list[int]
-    ) -> tuple[bool, list[Turn], Optional[str]]:
+    def validate_accusation(self, claim_ids: list[int]) -> tuple[bool, list[Turn], str | None]:
         """Validate whether a guard accusation is backed by real archive evidence."""
         valid, _, turns = self.interrogation.verify_evidence(self.memory, claim_ids)
         if not valid:
@@ -861,7 +900,9 @@ class GameEngine:
             reply = pick_neutral_fallback()
             self.state.active_speaker = guard.name
             self.state.active_dialogue = reply
-            self.state.last_notice = "Security radio glitched — please repeat your answer (no penalty)."
+            self.state.last_notice = (
+                "Security radio glitched — please repeat your answer (no penalty)."
+            )
             self.memory.add_turn(
                 speaker="guard",
                 text=reply,
@@ -890,8 +931,8 @@ class GameEngine:
         corrections_recorded: list[dict[str, Any]] = []
         contradictions_flagged: list[dict[str, Any]] = []
         promoted_contradictions: list[dict[str, Any]] = []
-        false_action_reason: Optional[str] = None
-        item_result_obj: Optional[ItemUseResult] = None
+        false_action_reason: str | None = None
+        item_result_obj: ItemUseResult | None = None
         outcome_facts: list[str] = []
         event_name = "player_spoke"
         guidance = "Respond naturally in character."
@@ -907,9 +948,7 @@ class GameEngine:
             guidance = "Briefly refuse any out-of-game request in character and steer back to security questioning."
             self.state.consecutive_evasions += 1
             if self.state.consecutive_evasions >= 2:
-                new_susp, _ = self.suspicion.apply_event(
-                    self.state.suspicion, "repeated_evasion"
-                )
+                new_susp, _ = self.suspicion.apply_event(self.state.suspicion, "repeated_evasion")
                 self.state.suspicion = new_susp
                 event_name = "repeated_evasion"
                 outcome_facts.append(
@@ -962,7 +1001,7 @@ class GameEngine:
             ):
                 hostile_reason = "Visitor made a severely suspicious or incriminating statement."
 
-            for raw_claim in ([] if hostile_reason else analysis.get("claims", [])):
+            for raw_claim in [] if hostile_reason else analysis.get("claims", []):
                 slot = raw_claim["slot"]
                 value = (raw_claim.get("value") or "").strip()
                 claim_status = raw_claim.get("status", "asserted")
@@ -1031,15 +1070,11 @@ class GameEngine:
             # 3. Check for false action claims (unverified past clearances / item uses)
             false_action_reason = self._detect_false_action_claim(player_text)
             if false_action_reason:
-                new_susp, _ = self.suspicion.apply_event(
-                    self.state.suspicion, "false_action_claim"
-                )
+                new_susp, _ = self.suspicion.apply_event(self.state.suspicion, "false_action_claim")
                 self.state.suspicion = new_susp
                 event_name = "false_action_claim"
                 outcome_facts.append(false_action_reason)
-                guidance = (
-                    "Point out that security logs have no record of the claimed action or clearance."
-                )
+                guidance = "Point out that security logs have no record of the claimed action or clearance."
                 self.state.last_notice = "Unverified action claim flagged by security logs."
                 self.memory.add_report(
                     source_turn=player_turn.turn_id,
@@ -1058,9 +1093,7 @@ class GameEngine:
                     "Halt the visitor immediately. Confront them sternly about their alarming or "
                     "incriminating remark and demand an explanation. Do NOT clear them or let them pass."
                 )
-                self.state.last_notice = (
-                    f"Security alert: {hostile_reason} (+{applied} suspicion — Interrogation triggered!)"
-                )
+                self.state.last_notice = f"Security alert: {hostile_reason} (+{applied} suspicion — Interrogation triggered!)"
                 self.memory.add_report(
                     source_turn=player_turn.turn_id,
                     summary=f"Security alert at {self.scenario.locations[self.state.current_location].name}: {hostile_reason}",
@@ -1121,9 +1154,7 @@ class GameEngine:
                     )
 
             if contradictions_flagged:
-                new_susp, _ = self.suspicion.apply_event(
-                    self.state.suspicion, "contradiction"
-                )
+                new_susp, _ = self.suspicion.apply_event(self.state.suspicion, "contradiction")
                 self.state.suspicion = new_susp
                 status = "contradiction_flagged"
                 event_name = "contradiction_flagged"
@@ -1203,9 +1234,7 @@ class GameEngine:
             #    2+ consecutive vague, repeated, bare yes/no, or non-answering turns = +15 suspicion!
             bare_yes_no = _is_bare_yes_no(player_text)
             is_repeat_to_guard = (
-                bool(claims_recorded)
-                and not new_info_for_guard
-                and not corrections_recorded
+                bool(claims_recorded) and not new_info_for_guard and not corrections_recorded
             )
             if not contradictions_flagged and not false_action_reason and not hostile_reason:
                 gave_clear_answer = (
@@ -1245,7 +1274,9 @@ class GameEngine:
                             "Call out the visitor for dodging or giving non-answers, and ask a direct "
                             "open-ended question requiring concrete specifics (no yes/no questions)."
                         )
-                        self.state.last_notice = "Repeated evasion/rambling increased suspicion (+15)."
+                        self.state.last_notice = (
+                            "Repeated evasion/rambling increased suspicion (+15)."
+                        )
                         self.state.consecutive_evasions = 1
                         if self.suspicion.is_final_interrogation(self.state.suspicion):
                             self.interrogation.trigger_interrogation(
@@ -1315,9 +1346,7 @@ class GameEngine:
                     f"{route_note} Repeating their name or institution does not explain what is in "
                     "their satchel. Demand they account for what they are carrying out of the museum."
                 )
-                self.state.last_notice = (
-                    "Account for what you're carrying out of the museum — repeating your name and institution isn't enough."
-                )
+                self.state.last_notice = "Account for what you're carrying out of the museum — repeating your name and institution isn't enough."
 
             # A turn earns confirmation progress whenever the visitor gives concrete,
             # non-ambiguous NEW details to this guard (not bare yes/no, not repeating
@@ -1359,9 +1388,7 @@ class GameEngine:
                     "Tell them clearly that the checkpoint scanner requires physical authorization: "
                     "either present their Invitation Letter or request a Night Curator Escort."
                 )
-                self.state.last_notice = (
-                    "Story verified! Physical authorization still needed — present your Invitation Letter (Inventory) or click 'Request Night Curator Escort (+25s)'."
-                )
+                self.state.last_notice = "Story verified! Physical authorization still needed — present your Invitation Letter (Inventory) or click 'Request Night Curator Escort (+25s)'."
             for obj_id in newly_completed:
                 obj = self.scenario.objectives[obj_id]
                 outcome_facts.append(f"Objective cleared: {obj.name}.")
@@ -1372,9 +1399,7 @@ class GameEngine:
                             "before lockdown."
                         )
                     elif obj_id == "escape_with_urn":
-                        guidance = (
-                            "Accept the visitor's explanation, unlock the exit doors, and wish them good night."
-                        )
+                        guidance = "Accept the visitor's explanation, unlock the exit doors, and wish them good night."
                     else:
                         guidance = (
                             f"Acknowledge that the visitor cleared this check ({obj.name}) "
@@ -1553,9 +1578,7 @@ class GameEngine:
                 )
 
         blocks_clearance = self.state.interrogation.blocks_clearance
-        eval_outcome = self.interrogation.apply_explanation_evaluation(
-            self.state, eval_raw
-        )
+        eval_outcome = self.interrogation.apply_explanation_evaluation(self.state, eval_raw)
         verdict = eval_outcome["evaluation"]
         if not self.state.interrogation.active:
             self.state.interrogation.blocks_clearance = False
@@ -1608,13 +1631,9 @@ class GameEngine:
         elif verdict == "convincing":
             reply_guidance = "Accept the explanation and allow the visitor to continue."
         elif verdict == "partially_convincing":
-            reply_guidance = (
-                "Express skepticism and cite an earlier statement from the visitor's file if relevant."
-            )
+            reply_guidance = "Express skepticism and cite an earlier statement from the visitor's file if relevant."
         else:
-            reply_guidance = (
-                "Reject the explanation firmly and cite the inconsistency from the visitor's record."
-            )
+            reply_guidance = "Reject the explanation firmly and cite the inconsistency from the visitor's record."
 
         dialogue_outcome = {
             "event": f"explanation_{verdict}",
@@ -1667,7 +1686,7 @@ class GameEngine:
             ending_id=self.state.ending_id,
         )
 
-    def _detect_false_action_claim(self, player_text: str) -> Optional[str]:
+    def _detect_false_action_claim(self, player_text: str) -> str | None:
         """Detect verbal claims of past item presentations or guard clearances not in engine state."""
         lower = player_text.lower()
 
@@ -1677,8 +1696,7 @@ class GameEngine:
                     named_guard = self._find_named_guard(lower)
                     if named_guard is not None:
                         recorded = any(
-                            entry["item_id"] == item_id
-                            and entry["guard_id"] == named_guard.id
+                            entry["item_id"] == item_id and entry["guard_id"] == named_guard.id
                             for entry in self.state.items_presented_log
                         )
                         if not recorded:
@@ -1698,7 +1716,7 @@ class GameEngine:
 
         return None
 
-    def _find_named_guard(self, lower_text: str) -> Optional[GuardDef]:
+    def _find_named_guard(self, lower_text: str) -> GuardDef | None:
         for guard in self.scenario.guards.values():
             full_name = guard.name.lower()
             surname = full_name.split()[-1] if full_name.split() else ""
@@ -1751,11 +1769,7 @@ class GameEngine:
         Required confirmations scale directly with suspicion tier. Only credible,
         non-ambiguous answers count — rambling/yapping never counts toward clearance.
         """
-        if (
-            had_contradiction
-            or self.state.interrogation.active
-            or self.state.interrogation_failed
-        ):
+        if had_contradiction or self.state.interrogation.active or self.state.interrogation_failed:
             return []
 
         loc_id = self.state.current_location
@@ -1781,10 +1795,13 @@ class GameEngine:
 
         # Passing the security checkpoint issues a single-use curator Access Card
         granted_card = False
-        if loc_id == "security_checkpoint" and self.state.inventory.get("access_card", 0) == 0:
-            if "access_card" in self.scenario.items:
-                self.inventory.grant_item(self.state, "access_card", 1)
-                granted_card = True
+        if (
+            loc_id == "security_checkpoint"
+            and self.state.inventory.get("access_card", 0) == 0
+            and "access_card" in self.scenario.items
+        ):
+            self.inventory.grant_item(self.state, "access_card", 1)
+            granted_card = True
 
         # Vault guard clearance unlocks the dedicated "Take the Gold Urn" action (no auto-skip!)
         if obj.id == "clear_vault_guard":
@@ -1802,7 +1819,11 @@ class GameEngine:
 
         # Standard room clearance: schedule smooth auto-advance to the next location!
         next_route = next(
-            (r for r in self.routes.available_routes(self.state) if r["is_forward"] and r["unlocked"]),
+            (
+                r
+                for r in self.routes.available_routes(self.state)
+                if r["is_forward"] and r["unlocked"]
+            ),
             None,
         )
         parts: list[str] = []
@@ -1816,7 +1837,7 @@ class GameEngine:
 
         return [obj.id]
 
-    def _check_and_finalize_ending(self) -> Optional[EndingDef]:
+    def _check_and_finalize_ending(self) -> EndingDef | None:
         if self.state.ended and self.state.ending_id:
             return self.scenario.endings.get(self.state.ending_id)
 
@@ -1827,9 +1848,7 @@ class GameEngine:
             self.state.ended_at = self._clock()
         return ending
 
-    def _rejected_turn(
-        self, notice: str, guard: GuardDef, susp_before: int
-    ) -> TurnResult:
+    def _rejected_turn(self, notice: str, guard: GuardDef, susp_before: int) -> TurnResult:
         return TurnResult(
             status="rejected",
             guard_id=guard.id,
@@ -1858,9 +1877,7 @@ class GameEngine:
         show_room = in_room or self.state.interrogation_dismissal
         guard = INTERROGATOR_GUARD if show_room else self.active_guard
         return {
-            "mission_summary": self.scenario.mission_briefing.get(
-                "summary", self.scenario.summary
-            ),
+            "mission_summary": self.scenario.mission_briefing.get("summary", self.scenario.summary),
             "location": {
                 "id": loc.id,
                 "name": "Interrogation Room" if show_room else loc.name,
@@ -1869,7 +1886,9 @@ class GameEngine:
                     if show_room
                     else loc.short_description
                 ),
-                "image": INTERROGATION_SCENE_IMAGE if show_room else (
+                "image": INTERROGATION_SCENE_IMAGE
+                if show_room
+                else (
                     VAULT_EMPTY_SCENE_IMAGE
                     if loc.id == "vault_display" and self.state.urn_taken
                     else loc.thumbnail
@@ -1927,7 +1946,7 @@ class GameEngine:
 
     def get_result(
         self,
-        personal_best_seconds: Optional[float] = None,
+        personal_best_seconds: float | None = None,
         is_new_record: bool = False,
     ) -> dict[str, Any]:
         """Return the debrief dictionary for `screens/results.py`."""
@@ -1958,7 +1977,7 @@ class GameEngine:
     def from_dict(
         cls,
         data: dict[str, Any],
-        scenario: Optional[ScenarioConfig] = None,
+        scenario: ScenarioConfig | None = None,
         llm_client: Any = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> "GameEngine":

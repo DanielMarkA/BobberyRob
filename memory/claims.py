@@ -3,7 +3,8 @@
 Maintains structured claims made during the game, including revisions and status.
 """
 
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from memory.models import SLOTS, STATUSES, Claim
 
@@ -11,7 +12,7 @@ from memory.models import SLOTS, STATUSES, Claim
 class ClaimStore:
     """Store for game claims, corrections, and slot queries."""
 
-    def __init__(self, claims: Optional[list[Claim]] = None) -> None:
+    def __init__(self, claims: list[Claim] | None = None) -> None:
         self._claims: list[Claim] = []
         self._claims_by_id: dict[int, Claim] = {}
         if claims:
@@ -25,19 +26,15 @@ class ClaimStore:
         value: str,
         source_turn: int,
         status: str = "asserted",
-        supersedes: Optional[int] = None,
-        turn_validator: Optional[Callable[[int], bool]] = None,
+        supersedes: int | None = None,
+        turn_validator: Callable[[int], bool] | None = None,
     ) -> Claim:
         """Add a new claim with validation."""
         if slot not in SLOTS:
-            raise ValueError(
-                f"Invalid slot '{slot}'. Must be one of: {', '.join(SLOTS)}"
-            )
+            raise ValueError(f"Invalid slot '{slot}'. Must be one of: {', '.join(SLOTS)}")
 
         if status not in STATUSES:
-            raise ValueError(
-                f"Invalid status '{status}'. Must be one of: {', '.join(STATUSES)}"
-            )
+            raise ValueError(f"Invalid status '{status}'. Must be one of: {', '.join(STATUSES)}")
 
         if turn_validator is not None and not turn_validator(source_turn):
             raise ValueError(
@@ -45,9 +42,7 @@ class ClaimStore:
             )
 
         if supersedes is not None and supersedes not in self._claims_by_id:
-            raise KeyError(
-                f"Superseded claim with id {supersedes} does not exist."
-            )
+            raise KeyError(f"Superseded claim with id {supersedes} does not exist.")
 
         next_id = max(self._claims_by_id.keys(), default=0) + 1
         claim = Claim(
@@ -68,16 +63,12 @@ class ClaimStore:
             raise KeyError(f"Claim with id {claim_id} does not exist.")
         return self._claims_by_id[claim_id]
 
-    def has_claim(self, claim_id: int) -> bool:
-        """Check if a claim exists."""
-        return claim_id in self._claims_by_id
-
     def correct_claim(
         self,
         old_claim_id: int,
         new_value: str,
         source_turn: int,
-        turn_validator: Optional[Callable[[int], bool]] = None,
+        turn_validator: Callable[[int], bool] | None = None,
     ) -> Claim:
         """Correct an earlier claim.
 
@@ -104,18 +95,14 @@ class ClaimStore:
     def set_status(self, claim_id: int, status: str) -> None:
         """Update the status of an existing claim."""
         if status not in STATUSES:
-            raise ValueError(
-                f"Invalid status '{status}'. Must be one of: {', '.join(STATUSES)}"
-            )
+            raise ValueError(f"Invalid status '{status}'. Must be one of: {', '.join(STATUSES)}")
         claim = self.get_claim(claim_id)
         claim.status = status
 
     def claims_in_slot(self, slot: str) -> list[Claim]:
         """Return all claims in the specified slot."""
         if slot not in SLOTS:
-            raise ValueError(
-                f"Invalid slot '{slot}'. Must be one of: {', '.join(SLOTS)}"
-            )
+            raise ValueError(f"Invalid slot '{slot}'. Must be one of: {', '.join(SLOTS)}")
         return [c for c in self._claims if c.slot == slot]
 
     def all_claims(self) -> list[Claim]:

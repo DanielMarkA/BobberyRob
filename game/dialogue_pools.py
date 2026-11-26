@@ -4,7 +4,6 @@ Rules never change across replays — only the phrasing varies.
 """
 
 import random
-from typing import Optional
 
 GUARD_OPENINGS: dict[str, tuple[str, ...]] = {
     "guard_casual": (
@@ -69,7 +68,7 @@ NEUTRAL_FALLBACKS: tuple[str, ...] = (
 )
 
 
-def pick_opening(guard_id: str, default: str, rng: Optional[random.Random] = None) -> str:
+def pick_opening(guard_id: str, default: str, rng: random.Random | None = None) -> str:
     pool = GUARD_OPENINGS.get(guard_id)
     if not pool:
         return default
@@ -81,7 +80,7 @@ def pick_item_reaction(
     item_id: str,
     guard_id: str,
     default: str,
-    rng: Optional[random.Random] = None,
+    rng: random.Random | None = None,
 ) -> str:
     pool = ITEM_REACTIONS.get((item_id, guard_id))
     if not pool:
@@ -90,6 +89,6 @@ def pick_item_reaction(
     return chooser.choice(pool)
 
 
-def pick_neutral_fallback(rng: Optional[random.Random] = None) -> str:
+def pick_neutral_fallback(rng: random.Random | None = None) -> str:
     chooser = rng if rng is not None else random
     return chooser.choice(NEUTRAL_FALLBACKS)

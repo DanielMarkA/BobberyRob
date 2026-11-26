@@ -6,6 +6,7 @@ import streamlit as st
 
 _CSS_PATH = Path(__file__).with_name("styles.css")
 
+
 @st.cache_data(max_entries=4)
 def _read_css(path: str, mtime_ns: int) -> str:
     try:

@@ -1,9 +1,12 @@
 import html
+import logging
 
 import streamlit as st
 
 from ui.data_provider import RUN_CATEGORIES, get_leaderboard
 from ui.formatting import format_time
+
+log = logging.getLogger(__name__)
 
 
 def render() -> None:
@@ -15,19 +18,23 @@ def render() -> None:
             "</div>"
         )
 
-        category = st.segmented_control(
-            "Run category",
-            RUN_CATEGORIES,
-            default=RUN_CATEGORIES[0],
-            required=True,
-            key="lb_category",
-            label_visibility="collapsed",
-            width="stretch",
-        ) or RUN_CATEGORIES[0]
+        category = (
+            st.segmented_control(
+                "Run category",
+                RUN_CATEGORIES,
+                default=RUN_CATEGORIES[0],
+                required=True,
+                key="lb_category",
+                label_visibility="collapsed",
+                width="stretch",
+            )
+            or RUN_CATEGORIES[0]
+        )
 
         try:
             entries = get_leaderboard(category)
         except Exception:
+            log.exception("Leaderboard query failed")
             st.html('<div class="lb-empty" role="status">Leaderboard unavailable right now.</div>')
             return
 

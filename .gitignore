@@ -1,4 +1,7 @@
 .venv/
+.ruff_cache/
+static/audio/bgm/*.wav
+static/audio/sfx/*.wav
 __pycache__/
 *.pyc
 .env

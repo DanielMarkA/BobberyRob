@@ -22,14 +22,14 @@ from game.state import (
 from game.suspicion import SuspicionManager
 
 __all__ = [
-    "ContradictionRecord",
     "ENDING_TO_CATEGORY",
-    "EndingEvaluator",
-    "GameEngine",
-    "GameState",
     "INTERROGATION_GUARD_PORTRAIT",
     "INTERROGATION_SCENE_IMAGE",
     "INTERROGATOR_GUARD",
+    "ContradictionRecord",
+    "EndingEvaluator",
+    "GameEngine",
+    "GameState",
     "InterrogationManager",
     "InterrogationState",
     "InventoryManager",

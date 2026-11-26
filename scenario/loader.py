@@ -3,7 +3,7 @@
 import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Optional, Union
+from typing import Any
 
 VALID_PERSONALITIES = ("casual", "strict", "observant", "experienced", "impatient")
 VALID_ITEM_TYPES = ("consumable", "reusable")
@@ -20,7 +20,6 @@ REQUIRED_SUSPICION_EVENTS = (
 
 class ScenarioValidationError(ValueError):
     """Raised when a scenario configuration fails structural or referential integrity validation."""
-    pass
 
 
 @dataclass
@@ -39,8 +38,8 @@ class LocationDef:
 @dataclass
 class RouteCondition:
     type: str
-    objective_id: Optional[str] = None
-    item_id: Optional[str] = None
+    objective_id: str | None = None
+    item_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -50,7 +49,7 @@ class RouteCondition:
 class RouteDef:
     from_location: str
     to_location: str
-    condition: Optional[RouteCondition] = None
+    condition: RouteCondition | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -291,7 +290,15 @@ def validate_scenario(data: dict[str, Any]) -> ScenarioConfig:
             raise ScenarioValidationError("Guard missing 'id' field.")
         if guard_id in guards:
             raise ScenarioValidationError(f"Duplicate guard ID: '{guard_id}'")
-        for field_name in ("name", "role", "personality", "assigned_location", "opening_line", "style_note", "portrait"):
+        for field_name in (
+            "name",
+            "role",
+            "personality",
+            "assigned_location",
+            "opening_line",
+            "style_note",
+            "portrait",
+        ):
             if field_name not in g:
                 raise ScenarioValidationError(f"Guard '{guard_id}' missing field '{field_name}'")
         if g["personality"] not in VALID_PERSONALITIES:
@@ -387,14 +394,18 @@ def validate_scenario(data: dict[str, Any]) -> ScenarioConfig:
         if from_loc not in locations:
             raise ScenarioValidationError(f"Route origin '{from_loc}' does not exist in locations.")
         if to_loc not in locations:
-            raise ScenarioValidationError(f"Route destination '{to_loc}' does not exist in locations.")
+            raise ScenarioValidationError(
+                f"Route destination '{to_loc}' does not exist in locations."
+            )
 
         cond_obj = None
         raw_cond = r.get("condition")
         if raw_cond:
             c_type = raw_cond.get("type")
             if not c_type:
-                raise ScenarioValidationError(f"Route condition from '{from_loc}' to '{to_loc}' missing 'type'.")
+                raise ScenarioValidationError(
+                    f"Route condition from '{from_loc}' to '{to_loc}' missing 'type'."
+                )
             c_obj_id = raw_cond.get("objective_id")
             c_item_id = raw_cond.get("item_id")
             if c_obj_id and c_obj_id not in objectives:
@@ -440,7 +451,9 @@ def validate_scenario(data: dict[str, Any]) -> ScenarioConfig:
     event_tbl = raw_susp.get("event_table", {})
     for ev in REQUIRED_SUSPICION_EVENTS:
         if ev not in event_tbl:
-            raise ScenarioValidationError(f"suspicion_settings event_table missing required event '{ev}'")
+            raise ScenarioValidationError(
+                f"suspicion_settings event_table missing required event '{ev}'"
+            )
         if "delta" not in event_tbl[ev]:
             raise ScenarioValidationError(f"Event '{ev}' missing 'delta'")
 
@@ -519,7 +532,7 @@ def validate_scenario(data: dict[str, Any]) -> ScenarioConfig:
     )
 
 
-def load_scenario(path: Union[str, Path] = None) -> ScenarioConfig:
+def load_scenario(path: str | Path | None = None) -> ScenarioConfig:
     """Load scenario configuration from JSON file and validate it.
 
     If path is omitted, defaults to 'scenario/museum.json' relative to workspace.

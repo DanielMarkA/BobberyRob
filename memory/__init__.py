@@ -14,14 +14,14 @@ from memory.models import (
 from memory.store import MemoryStore
 
 __all__ = [
+    "SLOTS",
+    "SPEAKERS",
+    "STATUSES",
     "Archive",
     "Claim",
     "ClaimStore",
     "GuardMemory",
     "MemoryStore",
     "Report",
-    "SLOTS",
-    "SPEAKERS",
-    "STATUSES",
     "Turn",
 ]

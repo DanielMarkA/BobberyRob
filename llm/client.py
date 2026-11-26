@@ -14,9 +14,9 @@ import json
 import logging
 import os
 import time
-from typing import Any, Optional
+from typing import Any
 
-from llm import prompts, schemas
+from llm import budget, prompts, schemas
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ EFFORT_DIALOGUE = "low"
 EFFORT_EVALUATION = "high"
 
 
-def read_setting(name: str) -> Optional[str]:
+def read_setting(name: str) -> str | None:
     """Read a setting from the environment, then from Streamlit secrets."""
     value = os.getenv(name)
     if value:
@@ -35,7 +35,7 @@ def read_setting(name: str) -> Optional[str]:
         import streamlit as st
 
         return st.secrets.get(name)
-    except Exception:  # no Streamlit, or no secrets.toml
+    except (ImportError, FileNotFoundError):  # no Streamlit, or no secrets.toml
         return None
 
 
@@ -44,15 +44,16 @@ class LLMClient:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        model: Optional[str] = None,
+        api_key: str | None = None,
+        model: str | None = None,
         timeout: float = 20.0,
         max_retries: int = 2,
         sdk_client: Any = None,
     ) -> None:
         self.model = model or read_setting("BOBBERY_LLM_MODEL") or DEFAULT_MODEL
         self.max_retries = max_retries
-        self.last_error: Optional[str] = None
+        self.timeout = timeout
+        self.last_error: str | None = None
         self._use_chat_completions = False
 
         if sdk_client is not None:  # tests inject a fake here
@@ -85,8 +86,12 @@ class LLMClient:
         """Call A. Returns a grounded analysis dict, plus `"fallback": bool`."""
         instructions, input_text = prompts.build_analysis_prompt(player_message, context)
         data = self._call_json(
-            instructions, input_text, "bobbery_analysis",
-            schemas.ANALYSIS_SCHEMA, schemas.analysis_errors, EFFORT_ANALYSIS,
+            instructions,
+            input_text,
+            "bobbery_analysis",
+            schemas.ANALYSIS_SCHEMA,
+            schemas.analysis_errors,
+            EFFORT_ANALYSIS,
         )
         if data is None:
             return schemas.fallback_analysis()
@@ -109,7 +114,10 @@ class LLMClient:
                     self.last_error = None
                     return line
                 self.last_error = "empty dialogue reply"
-            except Exception as exc:
+            except budget.TurnExpired as exc:
+                self.last_error = str(exc)
+                break
+            except Exception as exc:  # noqa: BLE001 - provider errors must return neutral dialogue
                 self.last_error = f"{type(exc).__name__}: {exc}"
             log.warning("dialogue attempt %d failed: %s", attempt + 1, self.last_error)
             _backoff(attempt, self.max_retries)
@@ -119,8 +127,12 @@ class LLMClient:
         """Call C. Returns an evaluation dict, plus `"fallback": bool`."""
         instructions, input_text = prompts.build_evaluation_prompt(explanation, context)
         data = self._call_json(
-            instructions, input_text, "bobbery_evaluation",
-            schemas.EVALUATION_SCHEMA, schemas.evaluation_errors, EFFORT_EVALUATION,
+            instructions,
+            input_text,
+            "bobbery_evaluation",
+            schemas.EVALUATION_SCHEMA,
+            schemas.evaluation_errors,
+            EFFORT_EVALUATION,
         )
         if data is None:
             return schemas.fallback_evaluation()
@@ -141,7 +153,10 @@ class LLMClient:
                     self.last_error = None
                     return data
                 self.last_error = "schema: " + "; ".join(errors[:3])
-            except Exception as exc:
+            except budget.TurnExpired as exc:
+                self.last_error = str(exc)
+                break
+            except Exception as exc:  # noqa: BLE001 - invalid model output or provider failure
                 self.last_error = f"{type(exc).__name__}: {exc}"
             log.warning("%s attempt %d failed: %s", name, attempt + 1, self.last_error)
             _backoff(attempt, self.max_retries)
@@ -161,7 +176,7 @@ class LLMClient:
         if text_format is not None:
             kwargs["text"] = {"format": text_format}
         try:
-            response = self._sdk.responses.create(**kwargs)
+            response = budget.request(self._sdk.responses.create, timeout=self.timeout, **kwargs)
         except Exception as exc:
             if type(exc).__name__ == "NotFoundError" and hasattr(self._sdk, "chat"):
                 log.info("Responses API returned 404; switching to Chat Completions API.")
@@ -199,7 +214,7 @@ class LLMClient:
             {"role": "system", "content": system_content},
             {"role": "user", "content": input_text},
         ]
-        response = self._sdk.chat.completions.create(**kwargs)
+        response = budget.request(self._sdk.chat.completions.create, timeout=self.timeout, **kwargs)
         choices = getattr(response, "choices", None) or []
         message = getattr(choices[0], "message", None) if choices else None
         text = getattr(message, "content", None)
@@ -222,4 +237,4 @@ def _strip_json_fences(text: str) -> str:
 
 def _backoff(attempt: int, max_retries: int) -> None:
     if attempt < max_retries:
-        time.sleep(0.5 * (attempt + 1))
+        time.sleep(min(0.5 * (attempt + 1), budget.remaining()))

@@ -41,10 +41,22 @@ def sample_context(guard_id: str) -> dict:
             if i["quantity"] > 0
         ],
         "earlier_claims": [
-            {"id": 1, "slot": "occupation", "value": "art historian",
-             "source_turn": 1, "status": "asserted", "supersedes": None},
-            {"id": 2, "slot": "name", "value": "Dr. Vance",
-             "source_turn": 1, "status": "asserted", "supersedes": None},
+            {
+                "id": 1,
+                "slot": "occupation",
+                "value": "art historian",
+                "source_turn": 1,
+                "status": "asserted",
+                "supersedes": None,
+            },
+            {
+                "id": 2,
+                "slot": "name",
+                "value": "Dr. Vance",
+                "source_turn": 1,
+                "status": "asserted",
+                "supersedes": None,
+            },
         ],
         "evidence": [first_turn],
         "recent_turns": [first_turn],

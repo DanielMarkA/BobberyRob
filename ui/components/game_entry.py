@@ -1,9 +1,12 @@
 import html
+import logging
 
 import streamlit as st
 
 from ui.data_provider import enter_game
-from ui.navigation import go_to, MISSION_BRIEFING
+from ui.navigation import MISSION_BRIEFING, go_to
+
+log = logging.getLogger(__name__)
 
 
 def _submit() -> None:
@@ -11,6 +14,7 @@ def _submit() -> None:
     try:
         result = enter_game(codename)
     except Exception:
+        log.exception("Player registration failed")
         st.session_state["entry_error"] = "Could not reach the server. Please try again."
         return
 
@@ -54,6 +58,4 @@ def render() -> None:
                 else ""
             )
             st.html(f'<div class="field-error-slot" aria-live="polite">{error_html}</div>')
-            st.form_submit_button(
-                "Enter game", type="primary", width="stretch", on_click=_submit
-            )
+            st.form_submit_button("Enter game", type="primary", width="stretch", on_click=_submit)

@@ -1,7 +1,10 @@
+import logging
+
 import streamlit as st
 
-from ui.audio import queue_sfx
 from ui.data_provider import use_item
+
+log = logging.getLogger(__name__)
 
 
 def _select(item_id: str) -> None:
@@ -22,18 +25,11 @@ def process_pending() -> bool:
     if item_id is None:
         return False
 
-    prev_susp = int(((st.session_state.get("game") or {}).get("suspicion") or {}).get("value", 0))
     try:
-        new_game = use_item(item_id)
-        st.session_state["game"] = new_game
+        st.session_state["game"] = use_item(item_id)
         st.session_state.pop("item_error", None)
-        new_susp = int((new_game.get("suspicion") or {}).get("value", 0))
-        notice_low = str(new_game.get("notice") or "").lower()
-        if new_susp > prev_susp or "don't have" in notice_low or "cannot be used" in notice_low:
-            queue_sfx("item_fail")
-        else:
-            queue_sfx("item_success")
     except Exception:
+        log.exception("Inventory action failed")
         st.session_state["item_error"] = "Could not use that item. Please try again."
     return True
 
@@ -61,9 +57,9 @@ def render(items: list[dict]) -> None:
             is_selected = item["id"] == selected
             if is_selected:
                 selected_item = item
-            image = f'![]({item["image"]}) ' if item.get("image") else ""
+            image = f"![]({item['image']}) " if item.get("image") else ""
             st.button(
-                f'{image}{item["name"]} `×{item["quantity"]}`',
+                f"{image}{item['name']} `×{item['quantity']}`",
                 key=f"pick_{item['id']}",
                 type="primary" if is_selected else "secondary",
                 on_click=_select,
@@ -74,7 +70,7 @@ def render(items: list[dict]) -> None:
 
         if selected_item is not None:
             st.button(
-                f'Present {selected_item["name"]}',
+                f"Present {selected_item['name']}",
                 key="use_item",
                 type="primary",
                 on_click=_queue_use,

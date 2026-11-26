@@ -1,6 +1,6 @@
 """Retrieval helpers for candidate conflicts and original source evidence."""
 
-from typing import Iterable
+from collections.abc import Iterable
 
 from memory.archive import Archive
 from memory.claims import ClaimStore
@@ -13,11 +13,7 @@ def find_candidates_for(claim_id: int, claim_store: ClaimStore) -> list[Claim]:
     Returns an empty list if there are no earlier claims in that slot.
     """
     target = claim_store.get_claim(claim_id)
-    return [
-        c
-        for c in claim_store.all_claims()
-        if c.slot == target.slot and c.id < target.id
-    ]
+    return [c for c in claim_store.all_claims() if c.slot == target.slot and c.id < target.id]
 
 
 def find_evidence(

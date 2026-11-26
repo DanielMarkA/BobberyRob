@@ -1,7 +1,5 @@
 """Backend-validated inventory ownership, usage conditions, and effects."""
 
-from typing import Optional
-
 from game.state import GameState, ItemUseResult
 from scenario.loader import GuardDef, ItemDef, ScenarioConfig
 
@@ -159,7 +157,7 @@ class InventoryManager:
         state: GameState,
         item_id: str,
         guard: GuardDef,
-        location_id: Optional[str] = None,
+        location_id: str | None = None,
     ) -> ItemUseResult:
         """Validate ownership, conditions, and apply configured item effects.
 
@@ -168,7 +166,7 @@ class InventoryManager:
         for the engine to apply through SuspicionManager.
         """
         loc_id = location_id or state.current_location
-        item_def: Optional[ItemDef] = self._scenario.items.get(item_id)
+        item_def: ItemDef | None = self._scenario.items.get(item_id)
 
         if item_def is None:
             return ItemUseResult(
@@ -236,7 +234,7 @@ class InventoryManager:
                 consumed=item_id == "bribe_money",
                 quantity_after=max(0, current_qty - 1) if item_id == "bribe_money" else current_qty,
                 suspicion_delta=failed_delta,
-                dialogue=f"Put that away. That won't work on me.",
+                dialogue="Put that away. That won't work on me.",
                 notice=f"{guard.name} rejected your {item_def.name.lower()}.",
                 triggers_interrogation=(item_id == "bribe_money"),
             )

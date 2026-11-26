@@ -1,11 +1,11 @@
 """Ending selection, challenge tracking, and debrief payload formatting."""
 
-from typing import Any, Optional
+from typing import Any
 
 from game.state import GameState
 from scenario.loader import EndingDef, ScenarioConfig
 
-ENDING_TO_CATEGORY: dict[str, Optional[str]] = {
+ENDING_TO_CATEGORY: dict[str, str | None] = {
     "perfect_infiltration": "Perfect Run",
     "successful_infiltration": "Successful Run",
     "compromised_victory": "Compromised Run",
@@ -44,12 +44,9 @@ class EndingEvaluator:
             return False
 
         suspicion_below = conds.get("suspicion_below")
-        if suspicion_below is not None and state.suspicion >= int(suspicion_below):
-            return False
+        return not (suspicion_below is not None and state.suspicion >= int(suspicion_below))
 
-        return True
-
-    def evaluate(self, state: GameState) -> Optional[EndingDef]:
+    def evaluate(self, state: GameState) -> EndingDef | None:
         """Evaluate current game state and return a matching EndingDef, or None."""
         # 1. Capture / Failure
         if state.interrogation_failed:
@@ -75,9 +72,7 @@ class EndingEvaluator:
 
         # Successful Infiltration
         successful = self._scenario.endings.get("successful_infiltration")
-        if successful and self._matches_victory_conditions(
-            state, successful, unresolved_count
-        ):
+        if successful and self._matches_victory_conditions(state, successful, unresolved_count):
             return successful
 
         # Compromised Victory (catch-all when artifact is retrieved under high heat)
@@ -94,7 +89,7 @@ class EndingEvaluator:
                 results[key] = len(state.unresolved_contradictions) == 0
         return results
 
-    def category_for(self, ending_id: str) -> Optional[str]:
+    def category_for(self, ending_id: str) -> str | None:
         return ENDING_TO_CATEGORY.get(ending_id)
 
     def build_result_payload(
@@ -102,7 +97,7 @@ class EndingEvaluator:
         state: GameState,
         ending: EndingDef,
         raw_seconds: float,
-        personal_best_seconds: Optional[float] = None,
+        personal_best_seconds: float | None = None,
         is_new_record: bool = False,
     ) -> dict[str, Any]:
         """Build the results screen dictionary matching `screens/results.py`."""
@@ -110,7 +105,7 @@ class EndingEvaluator:
         total_penalty = sum(p["seconds"] for p in penalties)
 
         is_failure = ending.tone == "failure"
-        adjusted_seconds: Optional[float] = (
+        adjusted_seconds: float | None = (
             None if is_failure else round(float(raw_seconds) + total_penalty, 2)
         )
 
@@ -157,8 +152,7 @@ class EndingEvaluator:
             conds["interrogations_allowed"]
         ):
             return False
-        if "unresolved_contradictions" in conds and unresolved_count > int(
-            conds["unresolved_contradictions"]
-        ):
-            return False
-        return True
+        return not (
+            "unresolved_contradictions" in conds
+            and unresolved_count > int(conds["unresolved_contradictions"])
+        )

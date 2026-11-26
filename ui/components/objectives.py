@@ -28,7 +28,7 @@ def render(items: list[dict]) -> None:
         row_parts.append(
             f'<li class="checkpoint-objective{modifier}">'
             f'<span class="checkpoint-sr">{sr}: </span>'
-            f'<span>{html.escape(item["text"])}</span></li>'
+            f"<span>{html.escape(item['text'])}</span></li>"
         )
     rows = "".join(row_parts)
     body = f"<ul>{rows}</ul>" if rows else "<p>No objectives yet.</p>"

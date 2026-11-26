@@ -8,7 +8,7 @@ exact replies; they are validated against the same schemas as real replies.
 
 import copy
 import random
-from typing import Any, Optional
+from typing import Any
 
 from llm import prompts, schemas
 
@@ -46,15 +46,15 @@ class MockLLMClient:
 
     def __init__(
         self,
-        analysis: Optional[dict[str, Any]] = None,
-        evaluation: Optional[dict[str, Any]] = None,
-        dialogue: Optional[str] = None,
+        analysis: dict[str, Any] | None = None,
+        evaluation: dict[str, Any] | None = None,
+        dialogue: str | None = None,
     ) -> None:
         self._analysis = analysis
         self._evaluation = evaluation
         self._dialogue = dialogue
         self.model = "mock"
-        self.last_error: Optional[str] = None
+        self.last_error: str | None = None
 
     def analyze(self, player_message: str, context: dict[str, Any]) -> dict[str, Any]:
         if self._analysis is not None:
@@ -90,11 +90,15 @@ class MockLLMClient:
         return schemas.FALLBACK_DIALOGUE
 
     def evaluate_explanation(self, explanation: str, context: dict[str, Any]) -> dict[str, Any]:
-        data = copy.deepcopy(self._evaluation) if self._evaluation is not None else {
-            "evaluation": "partially_convincing",
-            "reason": "Mock evaluation.",
-            "evidence_turns": [],
-        }
+        data = (
+            copy.deepcopy(self._evaluation)
+            if self._evaluation is not None
+            else {
+                "evaluation": "partially_convincing",
+                "reason": "Mock evaluation.",
+                "evidence_turns": [],
+            }
+        )
         errors = schemas.evaluation_errors(data)
         if errors:
             self.last_error = "schema: " + "; ".join(errors[:3])
@@ -103,7 +107,7 @@ class MockLLMClient:
         return schemas.ground_evaluation(data, turn_ids)
 
 
-def _mentioned_item(message: str, context: dict[str, Any]) -> Optional[str]:
+def _mentioned_item(message: str, context: dict[str, Any]) -> str | None:
     text = (message or "").lower()
     for item in prompts.normalize_context(context)["inventory"]:
         name = str(item.get("name", "")).lower()

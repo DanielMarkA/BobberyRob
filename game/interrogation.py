@@ -1,6 +1,6 @@
 """Evidence-backed contradiction tracking and interrogation lifecycle."""
 
-from typing import Any, Optional
+from typing import Any
 
 from game.state import ContradictionRecord, GameState, PenaltyRecord
 from game.suspicion import SuspicionManager
@@ -73,7 +73,7 @@ class InterrogationManager:
         reason: str,
         guard_id: str,
         current_turn_id: int,
-    ) -> Optional[ContradictionRecord]:
+    ) -> ContradictionRecord | None:
         """Record a contradiction only when backed by verbatim archive evidence.
 
         Returns None (and dismisses the accusation) if no backing evidence exists.
@@ -134,8 +134,8 @@ class InterrogationManager:
         *,
         is_final: bool = False,
         in_room: bool = False,
-        reason: Optional[str] = None,
-        memory: Optional[MemoryStore] = None,
+        reason: str | None = None,
+        memory: MemoryStore | None = None,
     ) -> None:
         """Activate formal interrogation room or final lockdown and lock movement.
 
@@ -200,7 +200,9 @@ class InterrogationManager:
             state.last_notice = "Suspicion reached 100 — Final Interrogation triggered!"
         elif enter_room:
             state.last_notice = (
-                f"Interrogation Room: {reason}" if reason else "Detained in the Interrogation Room. Explain yourself."
+                f"Interrogation Room: {reason}"
+                if reason
+                else "Detained in the Interrogation Room. Explain yourself."
             )
         else:
             state.last_notice = "Security interrogation initiated. Explain yourself."
@@ -224,9 +226,7 @@ class InterrogationManager:
             "unconvincing": "unconvincing_explanation",
         }
         event_name = event_map.get(verdict, "partially_convincing_explanation")
-        new_suspicion, applied_delta = self._suspicion.apply_event(
-            state.suspicion, event_name
-        )
+        new_suspicion, applied_delta = self._suspicion.apply_event(state.suspicion, event_name)
         state.suspicion = new_suspicion
 
         pending = self._get_pending_contradiction(state)
@@ -316,9 +316,7 @@ class InterrogationManager:
             "interrogation_failed": state.interrogation_failed,
         }
 
-    def _get_pending_contradiction(
-        self, state: GameState
-    ) -> Optional[ContradictionRecord]:
+    def _get_pending_contradiction(self, state: GameState) -> ContradictionRecord | None:
         cid = state.interrogation.pending_contradiction_id
         if cid is None:
             return None

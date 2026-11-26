@@ -1,9 +1,7 @@
-from pathlib import Path
-
 import streamlit as st
 
-from screens import main_menu, mission_briefing, gameplay, results
-from ui.navigation import init_state, MAIN_MENU, MISSION_BRIEFING, GAMEPLAY, RESULTS
+from screens import gameplay, main_menu, mission_briefing, results
+from ui.navigation import GAMEPLAY, MAIN_MENU, MISSION_BRIEFING, RESULTS, init_state
 from ui.styles import inject_global_styles
 
 st.set_page_config(

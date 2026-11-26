@@ -1,11 +1,13 @@
 import html
+import logging
 
 import streamlit as st
 
-from ui.audio import render_audio_controller, reset_speech_dedup
 from ui.components import header
 from ui.data_provider import get_mission_briefing, start_mission
-from ui.navigation import go_to, reset_mission_state, GAMEPLAY, MAIN_MENU
+from ui.navigation import GAMEPLAY, MAIN_MENU, go_to, reset_mission_state
+
+log = logging.getLogger(__name__)
 
 
 def _item(icon: str, label: str, body_html: str, modifier: str = "", label_prefix: str = "") -> str:
@@ -24,6 +26,7 @@ def _start_action() -> None:
     try:
         result = start_mission()
     except Exception:
+        log.exception("Could not start mission")
         st.error("Could not start the mission. Please try again.")
         return
     if not result["ok"]:
@@ -31,25 +34,26 @@ def _start_action() -> None:
         return
 
     reset_mission_state()
-    reset_speech_dedup()
     go_to(GAMEPLAY)
     st.rerun()
 
 
 def render() -> None:
     header.render(context="Mission Briefing")
-    render_audio_controller(track="menu")
     with st.container(key="mission_briefing"):
         try:
             mission = get_mission_briefing()
         except Exception:
+            log.exception("Could not load briefing")
             st.error("Could not load the mission briefing. Please try again.")
             st.button("Back to main menu", on_click=go_to, args=(MAIN_MENU,))
             return
 
         esc = html.escape
         location = esc(mission["location_name"])
-        optional = "".join(f"<li>{esc(objective)}</li>" for objective in mission["optional_objectives"])
+        optional = "".join(
+            f"<li>{esc(objective)}</li>" for objective in mission["optional_objectives"]
+        )
         art, text = st.columns(2)
         with art:
             image = mission["location_image"]
@@ -80,9 +84,20 @@ def render() -> None:
                 f'<h1 class="brief-title">{esc(mission["title"])}</h1>'
                 f'<p class="brief-summary">{esc(mission["summary"])}</p></div>'
                 '<div class="brief-objectives">'
-                + _item("primary", "Primary Objective", f'<p>{esc(mission["primary_objective"])}</p>', "brief-item-primary")
+                + _item(
+                    "primary",
+                    "Primary Objective",
+                    f"<p>{esc(mission['primary_objective'])}</p>",
+                    "brief-item-primary",
+                )
                 + _item("optional", "Optional Objectives", f"<ul>{optional}</ul>")
-                + _item("alert", "Security Alert", f'<p>{esc(mission["information"])}</p>', "brief-item-alert", alert_dot)
+                + _item(
+                    "alert",
+                    "Security Alert",
+                    f"<p>{esc(mission['information'])}</p>",
+                    "brief-item-alert",
+                    alert_dot,
+                )
                 + "</div></article>"
             )
             _start_action()

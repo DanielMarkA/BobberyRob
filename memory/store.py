@@ -4,15 +4,13 @@ Provides a single entry point for storing dialogue turns, claims, security
 reports, and performing retrieval for contradiction checks.
 """
 
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
 from memory.archive import Archive
 from memory.claims import ClaimStore
 from memory.guard_memory import GuardMemory
 from memory.models import (
-    SLOTS,
-    SPEAKERS,
-    STATUSES,
     Claim,
     Report,
     Turn,
@@ -29,15 +27,13 @@ class MemoryStore:
 
     def __init__(
         self,
-        archive: Optional[Archive] = None,
-        claims: Optional[ClaimStore] = None,
-        guard_memory: Optional[GuardMemory] = None,
+        archive: Archive | None = None,
+        claims: ClaimStore | None = None,
+        guard_memory: GuardMemory | None = None,
     ) -> None:
         self._archive = archive if archive is not None else Archive()
         self._claims = claims if claims is not None else ClaimStore()
-        self._guard_memory = (
-            guard_memory if guard_memory is not None else GuardMemory()
-        )
+        self._guard_memory = guard_memory if guard_memory is not None else GuardMemory()
 
     # -------------------------------------------------------------------------
     # Archive methods
@@ -47,8 +43,8 @@ class MemoryStore:
         self,
         speaker: str,
         text: str,
-        guard_id: Optional[str] = None,
-        location_id: Optional[str] = None,
+        guard_id: str | None = None,
+        location_id: str | None = None,
     ) -> Turn:
         """Add a turn to the conversation archive.
 
@@ -163,7 +159,7 @@ class MemoryStore:
         self,
         source_turn: int,
         summary: str,
-        shared_with: Optional[list[str]] = None,
+        shared_with: list[str] | None = None,
     ) -> Report:
         """Add a shared security report referencing a source turn.
 
