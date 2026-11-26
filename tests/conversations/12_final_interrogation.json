@@ -11,7 +11,7 @@
   "expected": {
     "final_suspicion": 100,
     "interrogation_triggered": true,
-    "current_scene": "/app/static/images/interrogation_room.webp",
+    "current_scene": "app/static/images/interrogation_room.webp",
     "movement_locked": true,
     "active_guard_personality": "impatient"
   }

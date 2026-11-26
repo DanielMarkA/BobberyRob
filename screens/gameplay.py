@@ -148,7 +148,7 @@ def _render_injection_jumpscare() -> None:
             '<div class="jumpscare-stage">'
             '  <div class="jumpscare-vignette" aria-hidden="true"></div>'
             '  <div class="jumpscare-frame">'
-            '    <img class="jumpscare-portrait" src="/app/static/images/Dishonesty.png" alt="Dishonesty detected" />'
+            '    <img class="jumpscare-portrait" src="app/static/images/Dishonesty.png" alt="Dishonesty detected" />'
             "  </div>"
             '  <div class="jumpscare-copy">'
             '    <span class="jumpscare-badge">SECURITY BREACH // SYSTEM TAMPERING</span>'

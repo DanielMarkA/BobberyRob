@@ -35,7 +35,7 @@ def render() -> None:
             '<div class="entry-head">'
             '<div class="entry-emblem-wrap">'
             '<div class="entry-aperture-ring" aria-hidden="true"></div>'
-            '<img class="entry-emblem" src="/app/static/brand/emblem.webp" alt="">'
+            '<img class="entry-emblem" src="app/static/brand/emblem.webp" alt="">'
             "</div>"
             '<h1 class="entry-title">Bobbery Rob</h1>'
             '<p class="entry-tagline">Your identity is your greatest weapon.</p>'

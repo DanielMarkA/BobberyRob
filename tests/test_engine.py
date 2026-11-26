@@ -972,7 +972,7 @@ class TestFullPlaythroughsAndEndings(unittest.TestCase):
         self.assertNotIn("game engine", cleaned.lower())
         self.assertEqual(
             self.scenario.items["access_card"].image,
-            "/app/static/inventory/access_card.png",
+            "app/static/inventory/access_card.png",
         )
 
     def test_alternate_ending_academic_discovery(self) -> None:

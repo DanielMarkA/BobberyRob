@@ -13,7 +13,7 @@ _SCREEN_CSS = """
 
 _HEADER_BRAND = (
     '<div class="app-header-brand">'
-    '<img class="app-header-emblem" src="/app/static/brand/emblem.webp" alt="">'
+    '<img class="app-header-emblem" src="app/static/brand/emblem.webp" alt="">'
     '<span class="app-header-title">Bobbery Rob</span>'
     "</div>"
 )

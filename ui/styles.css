@@ -1,12 +1,12 @@
 /* =============================================================================
-   0. SELF-HOSTED TYPOGRAPHY (served from /app/static/fonts/)
+   0. SELF-HOSTED TYPOGRAPHY (keep asset URLs relative to the Streamlit app)
    ============================================================================= */
 @font-face {
   font-family: "Barlow Condensed";
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/app/static/fonts/barlow-condensed-500-latin-ext.woff2") format("woff2");
+  src: url("app/static/fonts/barlow-condensed-500-latin-ext.woff2") format("woff2");
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
@@ -14,7 +14,7 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/app/static/fonts/barlow-condensed-500-latin.woff2") format("woff2");
+  src: url("app/static/fonts/barlow-condensed-500-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
@@ -22,7 +22,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/app/static/fonts/barlow-condensed-600-latin-ext.woff2") format("woff2");
+  src: url("app/static/fonts/barlow-condensed-600-latin-ext.woff2") format("woff2");
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
@@ -30,7 +30,7 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url("/app/static/fonts/barlow-condensed-600-latin.woff2") format("woff2");
+  src: url("app/static/fonts/barlow-condensed-600-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
@@ -38,7 +38,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/app/static/fonts/barlow-condensed-700-latin-ext.woff2") format("woff2");
+  src: url("app/static/fonts/barlow-condensed-700-latin-ext.woff2") format("woff2");
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
@@ -46,7 +46,7 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url("/app/static/fonts/barlow-condensed-700-latin.woff2") format("woff2");
+  src: url("app/static/fonts/barlow-condensed-700-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
@@ -54,7 +54,7 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url("/app/static/fonts/public-sans-latin-ext.woff2") format("woff2");
+  src: url("app/static/fonts/public-sans-latin-ext.woff2") format("woff2");
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
@@ -62,7 +62,7 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url("/app/static/fonts/public-sans-latin.woff2") format("woff2");
+  src: url("app/static/fonts/public-sans-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
@@ -70,7 +70,7 @@
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url("/app/static/fonts/public-sans-400-italic-latin-ext.woff2") format("woff2");
+  src: url("app/static/fonts/public-sans-400-italic-latin-ext.woff2") format("woff2");
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
@@ -78,7 +78,7 @@
   font-style: italic;
   font-weight: 400;
   font-display: swap;
-  src: url("/app/static/fonts/public-sans-400-italic-latin.woff2") format("woff2");
+  src: url("app/static/fonts/public-sans-400-italic-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
@@ -86,7 +86,7 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url("/app/static/fonts/jetbrains-mono-latin-ext.woff2") format("woff2");
+  src: url("app/static/fonts/jetbrains-mono-latin-ext.woff2") format("woff2");
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
@@ -94,7 +94,7 @@
   font-style: normal;
   font-weight: 400 700;
   font-display: swap;
-  src: url("/app/static/fonts/jetbrains-mono-latin.woff2") format("woff2");
+  src: url("app/static/fonts/jetbrains-mono-latin.woff2") format("woff2");
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
@@ -412,7 +412,7 @@ header[data-testid="stHeader"],
   background:
     radial-gradient(ellipse 65% 75% at 72% 48%, rgba(224, 159, 62, 0.08), transparent 68%),
     linear-gradient(125deg, rgba(14, 17, 14, 0.90), rgba(18, 21, 18, 0.84) 55%, rgba(12, 14, 12, 0.94)),
-    url("/app/static/backgrounds/museum_blur.webp") center / cover no-repeat,
+    url("app/static/backgrounds/museum_blur.webp") center / cover no-repeat,
     var(--bg);
 }
 
@@ -708,7 +708,7 @@ header[data-testid="stHeader"],
   aspect-ratio: 1;
   flex: none;
   background: var(--amber);
-  mask: url("/app/static/icons/trophy.svg") center / contain no-repeat;
+  mask: url("app/static/icons/trophy.svg") center / contain no-repeat;
 }
 
 .st-key-leaderboard_panel h2.lb-title {
@@ -1092,7 +1092,7 @@ header[data-testid="stHeader"],
   aspect-ratio: 1;
   flex: none;
   background: var(--amber);
-  mask: url("/app/static/icons/map-pin.svg") center / contain no-repeat;
+  mask: url("app/static/icons/map-pin.svg") center / contain no-repeat;
 }
 
 .brief-art-empty {
@@ -1211,17 +1211,17 @@ header[data-testid="stHeader"],
 }
 
 .brief-icon-primary {
-  --brief-icon: url("/app/static/icons/target.svg");
+  --brief-icon: url("app/static/icons/target.svg");
   background: var(--amber);
 }
 
 .brief-icon-optional {
-  --brief-icon: url("/app/static/icons/circle-check.svg");
+  --brief-icon: url("app/static/icons/circle-check.svg");
   background: var(--sage);
 }
 
 .brief-icon-alert {
-  --brief-icon: url("/app/static/icons/shield-exclamation-point.svg");
+  --brief-icon: url("app/static/icons/shield-exclamation-point.svg");
   background: var(--crimson-text);
 }
 
@@ -1301,7 +1301,7 @@ header[data-testid="stHeader"],
   block-size: 1em;
   flex: none;
   background: currentColor;
-  mask: url("/app/static/icons/arrow-right.svg") center / contain no-repeat;
+  mask: url("app/static/icons/arrow-right.svg") center / contain no-repeat;
   transition: transform var(--t-fast) var(--ease-out);
 }
 
@@ -1468,11 +1468,11 @@ header[data-testid="stHeader"],
   mask: var(--cp-icon) center / contain no-repeat;
 }
 
-.checkpoint-icon-location { --cp-icon: url("/app/static/icons/map-pin.svg"); }
-.checkpoint-icon-objectives { --cp-icon: url("/app/static/icons/target.svg"); }
-.checkpoint-icon-inventory { --cp-icon: url("/app/static/icons/backpack.svg"); }
-.checkpoint-icon-suspicion { --cp-icon: url("/app/static/icons/shield-exclamation-point.svg"); }
-.checkpoint-icon-time { --cp-icon: url("/app/static/icons/timer.svg"); }
+.checkpoint-icon-location { --cp-icon: url("app/static/icons/map-pin.svg"); }
+.checkpoint-icon-objectives { --cp-icon: url("app/static/icons/target.svg"); }
+.checkpoint-icon-inventory { --cp-icon: url("app/static/icons/backpack.svg"); }
+.checkpoint-icon-suspicion { --cp-icon: url("app/static/icons/shield-exclamation-point.svg"); }
+.checkpoint-icon-time { --cp-icon: url("app/static/icons/timer.svg"); }
 
 /* ---------- 6.1 Left Rail: Mission ---------- */
 .st-key-checkpoint_brief {
@@ -1519,7 +1519,7 @@ header[data-testid="stHeader"],
   letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1.1;
-  --cp-icon: url("/app/static/icons/clipboard-list.svg");
+  --cp-icon: url("app/static/icons/clipboard-list.svg");
 }
 
 .st-key-checkpoint_brief [data-testid="stExpanderDetails"] {
@@ -1734,7 +1734,7 @@ header[data-testid="stHeader"],
   color: var(--text);
   font-size: clamp(0.8rem, calc(0.9 * var(--cp-step)), 0.92rem);
   line-height: 1.32;
-  --cp-icon: url("/app/static/icons/circle.svg");
+  --cp-icon: url("app/static/icons/circle.svg");
 }
 
 .checkpoint-objective::before {
@@ -1756,7 +1756,7 @@ header[data-testid="stHeader"],
 
 .checkpoint-objective.done {
   color: var(--muted);
-  --cp-icon: url("/app/static/icons/circle-check.svg");
+  --cp-icon: url("app/static/icons/circle-check.svg");
 }
 
 .checkpoint-objective.done::before {
@@ -2030,7 +2030,7 @@ header[data-testid="stHeader"],
   block-size: 0.95em;
   flex: none;
   background: var(--ink-on-amber);
-  mask: url("/app/static/icons/send.svg") center / contain no-repeat;
+  mask: url("app/static/icons/send.svg") center / contain no-repeat;
 }
 
 .st-key-checkpoint button:focus-visible {
@@ -2602,7 +2602,7 @@ header[data-testid="stHeader"],
 }
 
 .st-key-results .result-banner {
-  --res-icon: url("/app/static/icons/circle-check.svg");
+  --res-icon: url("app/static/icons/circle-check.svg");
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2621,14 +2621,14 @@ header[data-testid="stHeader"],
 }
 
 .st-key-results .result-banner.partial {
-  --res-icon: url("/app/static/icons/info.svg");
+  --res-icon: url("app/static/icons/info.svg");
   border-color: var(--caution-border);
   background: linear-gradient(90deg, rgba(224, 159, 62, 0.18), rgba(38, 30, 17, 0.85));
   color: var(--caution-text);
 }
 
 .st-key-results .result-banner.failure {
-  --res-icon: url("/app/static/icons/shield-exclamation-point.svg");
+  --res-icon: url("app/static/icons/shield-exclamation-point.svg");
   border-color: var(--crimson-border);
   background: linear-gradient(90deg, rgba(217, 83, 79, 0.2), rgba(42, 20, 20, 0.85));
   color: var(--crimson-text);
@@ -2646,12 +2646,12 @@ header[data-testid="stHeader"],
   mask: var(--res-icon) center / contain no-repeat;
 }
 
-.result-icon-timer { --res-icon: url("/app/static/icons/timer.svg"); }
-.result-icon-shield { --res-icon: url("/app/static/icons/shield-exclamation-point.svg"); }
-.result-icon-target { --res-icon: url("/app/static/icons/target.svg"); }
-.result-icon-trophy { --res-icon: url("/app/static/icons/trophy.svg"); }
-.st-key-result_retry { --res-icon: url("/app/static/icons/rotate-ccw.svg"); }
-.st-key-result_menu { --res-icon: url("/app/static/icons/house.svg"); }
+.result-icon-timer { --res-icon: url("app/static/icons/timer.svg"); }
+.result-icon-shield { --res-icon: url("app/static/icons/shield-exclamation-point.svg"); }
+.result-icon-target { --res-icon: url("app/static/icons/target.svg"); }
+.result-icon-trophy { --res-icon: url("app/static/icons/trophy.svg"); }
+.st-key-result_retry { --res-icon: url("app/static/icons/rotate-ccw.svg"); }
+.st-key-result_menu { --res-icon: url("app/static/icons/house.svg"); }
 
 .result-clock {
   padding: clamp(0.85rem, calc(1.15 * var(--res-step)), 1.2rem) 1rem;

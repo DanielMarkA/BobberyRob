@@ -8,8 +8,8 @@ from memory.models import Claim, Turn
 from memory.store import MemoryStore
 from scenario.loader import GuardDef, ScenarioConfig
 
-INTERROGATION_SCENE_IMAGE = "/app/static/images/interrogation_room.webp"
-INTERROGATION_GUARD_PORTRAIT = "/app/static/images/interrogator.webp?v=2"
+INTERROGATION_SCENE_IMAGE = "app/static/images/interrogation_room.webp"
+INTERROGATION_GUARD_PORTRAIT = "app/static/images/interrogator.webp?v=2"
 
 INTERROGATOR_GUARD = GuardDef(
     id="guard_interrogator",

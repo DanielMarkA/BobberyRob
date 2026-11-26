@@ -15,10 +15,10 @@ ENDING_TO_CATEGORY: dict[str, str | None] = {
 
 # Polished debrief artwork overrides (falling back to scenario ending scene_image)
 DEBRIEF_IMAGE_MAP: dict[str, str] = {
-    "perfect_infiltration": "/app/static/images/debrief_success.webp",
-    "successful_infiltration": "/app/static/images/debrief_success.webp",
-    "compromised_victory": "/app/static/images/debrief_compromised.webp",
-    "capture_failure": "/app/static/images/debrief_captured.webp",
+    "perfect_infiltration": "app/static/images/debrief_success.webp",
+    "successful_infiltration": "app/static/images/debrief_success.webp",
+    "compromised_victory": "app/static/images/debrief_compromised.webp",
+    "capture_failure": "app/static/images/debrief_captured.webp",
 }
 
 

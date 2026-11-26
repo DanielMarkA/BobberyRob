@@ -3,13 +3,13 @@
   "title": "The Forgotten Artifact",
   "summary": "A priceless relic, the Aurelian Gold Urn, sits inside the Grand Museum's restricted vault. Build a believable cover story, navigate past security patrols, take the gold urn, and escape before the night shift locks down the building.",
   "location_name": "Grand Museum",
-  "location_image": "/app/static/images/debrief_success.webp",
+  "location_image": "app/static/images/debrief_success.webp",
   "starting_location": "museum_entrance",
   "mission_briefing": {
     "title": "The Forgotten Artifact",
     "summary": "A priceless relic, the Aurelian Gold Urn, sits inside the Grand Museum's restricted vault. Build a believable cover story, navigate past security patrols, take the gold urn, and escape before the night shift locks down the building.",
     "location_name": "Grand Museum",
-    "location_image": "/app/static/images/debrief_success.webp",
+    "location_image": "app/static/images/debrief_success.webp",
     "primary_objective": "Clear vault security, take the Gold Urn from its pedestal, and escape the museum.",
     "optional_objectives": [
       "Complete the mission without triggering an interrogation.",
@@ -22,25 +22,25 @@
       "id": "fake_passport",
       "name": "Fake Passport",
       "quantity": 1,
-      "image": "/app/static/inventory/fake_passport.png"
+      "image": "app/static/inventory/fake_passport.png"
     },
     {
       "id": "bribe_money",
       "name": "Bribe Money",
       "quantity": 3,
-      "image": "/app/static/inventory/bribe_money.png"
+      "image": "app/static/inventory/bribe_money.png"
     },
     {
       "id": "invitation_letter",
       "name": "Invitation Letter",
       "quantity": 1,
-      "image": "/app/static/inventory/invitation_letter.png"
+      "image": "app/static/inventory/invitation_letter.png"
     },
     {
       "id": "access_card",
       "name": "Access Card",
       "quantity": 0,
-      "image": "/app/static/inventory/access_card.png"
+      "image": "app/static/inventory/access_card.png"
     }
   ],
   "locations": [
@@ -49,48 +49,48 @@
       "name": "Museum Entrance & Reception",
       "short_description": "The marble-columned entry foyer where incoming guests register at the front desk. Glass turnstiles lead inward under warm chandelier lighting.",
       "security_level": 1,
-      "image": "/app/static/images/museum_entrance.webp",
-      "thumbnail": "/app/static/images/museum_entrance.webp"
+      "image": "app/static/images/museum_entrance.webp",
+      "thumbnail": "app/static/images/museum_entrance.webp"
     },
     {
       "id": "main_hall",
       "name": "Main Exhibition Hall",
       "short_description": "A vast gallery filled with classical sculptures and illuminated glass display cases. Visitors wander along designated velvet carpet paths.",
       "security_level": 2,
-      "image": "/app/static/images/main_exhibition_hall.webp",
-      "thumbnail": "/app/static/images/main_exhibition_hall_thumb.webp"
+      "image": "app/static/images/main_exhibition_hall.webp",
+      "thumbnail": "app/static/images/main_exhibition_hall_thumb.webp"
     },
     {
       "id": "security_checkpoint",
       "name": "Security Checkpoint",
       "short_description": "A reinforced screening corridor dividing the public wings from administrative quarters. Heavy metal detectors and an ID scanner control passage.",
       "security_level": 3,
-      "image": "/app/static/images/security_checkpoint.webp",
-      "thumbnail": "/app/static/images/security_checkpoint.webp"
+      "image": "app/static/images/security_checkpoint.webp",
+      "thumbnail": "app/static/images/security_checkpoint.webp"
     },
     {
       "id": "restricted_area",
       "name": "Restricted Collection Area",
       "short_description": "A quiet, climate-controlled corridor lined with locked archival vaults and curator research stations. Warning signs mark authorized staff access only.",
       "security_level": 4,
-      "image": "/app/static/images/restricted_collection_area.webp",
-      "thumbnail": "/app/static/images/restricted_collection_area.webp"
+      "image": "app/static/images/restricted_collection_area.webp",
+      "thumbnail": "app/static/images/restricted_collection_area.webp"
     },
     {
       "id": "vault_display",
       "name": "Vault Display Sanctum",
       "short_description": "An armored inner chamber housing the Aurelian Gold Urn inside a pressurized glass pedestal. Motion sensors line the perimeter.",
       "security_level": 5,
-      "image": "/app/static/images/restricted_collection_area.webp",
-      "thumbnail": "/app/static/images/restricted_collection_area.webp"
+      "image": "app/static/images/restricted_collection_area.webp",
+      "thumbnail": "app/static/images/restricted_collection_area.webp"
     },
     {
       "id": "museum_exit",
       "name": "Exit Checkpoint & Grand Foyer",
       "short_description": "The final glass vestibule before the street. Late-night departure patrols inspect everyone leaving the building after closing.",
       "security_level": 6,
-      "image": "/app/static/images/museum_entrance.webp",
-      "thumbnail": "/app/static/images/museum_entrance.webp"
+      "image": "app/static/images/museum_entrance.webp",
+      "thumbnail": "app/static/images/museum_entrance.webp"
     }
   ],
   "routes": [
@@ -164,7 +164,7 @@
       "assigned_location": "museum_entrance",
       "opening_line": "Hey there! Welcome to the Grand Museum—just need your name and what brings you in tonight before you head through.",
       "style_note": "Laid-back, conversational tone; accepts plausible cover stories and logs basic visitor sign-in details.",
-      "portrait": "/app/static/images/Casual.webp?v=2"
+      "portrait": "app/static/images/Casual.webp?v=2"
     },
     {
       "id": "guard_strict",
@@ -174,7 +174,7 @@
       "assigned_location": "main_hall",
       "opening_line": "Halt. The main gallery is operating under strict perimeter surveillance tonight. State your credentials and business here.",
       "style_note": "Curt, formal, by-the-book; dismisses casual small talk, rejects bribes outright, and demands clear institutional details.",
-      "portrait": "/app/static/images/Second%20Guard.webp"
+      "portrait": "app/static/images/Second%20Guard.webp"
     },
     {
       "id": "guard_observant",
@@ -184,7 +184,7 @@
       "assigned_location": "security_checkpoint",
       "opening_line": "Step forward to the scanner, please. State your clearance, who authorized your visit, and which department you represent.",
       "style_note": "Meticulous and analytical; cross-checks earlier visitor logs, spots counterfeit watermarks immediately, and probes specific details.",
-      "portrait": "/app/static/images/inspector.webp"
+      "portrait": "app/static/images/inspector.webp"
     },
     {
       "id": "guard_experienced",
@@ -194,7 +194,7 @@
       "assigned_location": "restricted_area",
       "opening_line": "Thirty years here, and I know every curator on staff. Who approved your access back here, and what did you tell reception?",
       "style_note": "Shrewd, unflappable veteran; cross-examines earlier claims from reception and checkpoint logs and probes institutional history.",
-      "portrait": "/app/static/images/chief.webp"
+      "portrait": "app/static/images/chief.webp"
     },
     {
       "id": "guard_impatient",
@@ -204,7 +204,7 @@
       "assigned_location": "vault_display",
       "opening_line": "Make it quick, we're locking down the urn vault in five minutes. Who cleared you for this chamber and why are you here?",
       "style_note": "Abrupt, hurried, easily agitated; cuts off rambling answers, double-checks earlier reports, and demands quick, consistent answers.",
-      "portrait": "/app/static/images/interrogator.webp?v=2"
+      "portrait": "app/static/images/interrogator.webp?v=2"
     },
     {
       "id": "guard_exit",
@@ -214,7 +214,7 @@
       "assigned_location": "museum_exit",
       "opening_line": "Hold on—we're closing the doors. You're leaving late and carrying a heavy satchel. Remind me of your name, your role here, and why you stayed past closing.",
       "style_note": "Sharp, composed exit commander doing final departure sweeps; cross-checks the visitor's entire story against earlier checkpoint logs before unlocking the exit.",
-      "portrait": "/app/static/images/Last%20Guard.webp?v=2"
+      "portrait": "app/static/images/Last%20Guard.webp?v=2"
     }
   ],
   "items": [
@@ -224,7 +224,7 @@
       "description": "A forged international passport with academic visas. Supports your cover story and lowers suspicion with casual guards—but observant officers can spot the counterfeit watermark.",
       "type": "consumable",
       "starting_quantity": 1,
-      "image": "/app/static/inventory/fake_passport.png",
+      "image": "app/static/inventory/fake_passport.png",
       "usage_conditions": {
         "locations": [
           "museum_entrance",
@@ -263,7 +263,7 @@
       "description": "An envelope of unmarked cash. Calms down certain guards and lowers suspicion, but bribing strict or honest officers triggers immediate interrogation.",
       "type": "consumable",
       "starting_quantity": 3,
-      "image": "/app/static/inventory/bribe_money.png",
+      "image": "app/static/inventory/bribe_money.png",
       "usage_conditions": {
         "min_quantity": 1
       },
@@ -322,7 +322,7 @@
       "description": "An embossed VIP gala invitation signed by the Board President. Backs up a guest or scholar cover story and lowers suspicion.",
       "type": "consumable",
       "starting_quantity": 1,
-      "image": "/app/static/inventory/invitation_letter.png",
+      "image": "app/static/inventory/invitation_letter.png",
       "usage_conditions": {
         "locations": [
           "museum_entrance",
@@ -368,7 +368,7 @@
       "description": "A single-use magnetic keycard with Level-4 curator credentials. Strengthens your cover story and lowers suspicion in restricted wings.",
       "type": "consumable",
       "starting_quantity": 0,
-      "image": "/app/static/inventory/access_card.png",
+      "image": "app/static/inventory/access_card.png",
       "usage_conditions": {
         "locations": [
           "security_checkpoint",
@@ -578,7 +578,7 @@
       "narration_seed": "You step out into the night air with the Aurelian Gold Urn tucked safely in your satchel. Not a single alarm rang, and the guards are none the wiser.",
       "quote": "You got out with the gold urn without leaving a ripple. Flawless work, Rob.",
       "quote_by": "The Agency",
-      "scene_image": "/app/static/images/debrief_success.webp",
+      "scene_image": "app/static/images/debrief_success.webp",
       "scene_caption": "Reference photo of the Aurelian Gold Urn before the heist"
     },
     {
@@ -598,7 +598,7 @@
       "narration_seed": "With steady nerves and quick wits, you walk past the final doors into the cool night air with the Gold Urn secured. A few guards raised eyebrows, but your cover held.",
       "quote": "You got out with the urn. Good work, Rob.",
       "quote_by": "The Agency",
-      "scene_image": "/app/static/images/debrief_success.webp",
+      "scene_image": "app/static/images/debrief_success.webp",
       "scene_caption": "Reference photo of the Aurelian Gold Urn before the heist"
     },
     {
@@ -618,7 +618,7 @@
       "narration_seed": "Alarms chime across the facade just as you slip past the exit doors with the Gold Urn. You secured the prize, but your cover story is burned and security is already pulling camera feeds.",
       "quote": "You got out with the urn. Barely. Don't expect the cleanup crew to thank you.",
       "quote_by": "The Agency",
-      "scene_image": "/app/static/images/debrief_compromised.webp",
+      "scene_image": "app/static/images/debrief_compromised.webp",
       "scene_caption": "The Grand Museum seen from a rain-soaked sidewalk at night"
     },
     {
@@ -634,7 +634,7 @@
       "narration_seed": "The interrogation room door clicks shut. The chief investigator spreads your contradictory visitor logs across the steel table, and the Aurelian Gold Urn remains under museum lock and key.",
       "quote": "The Agency does not know you. The mission is officially disavowed.",
       "quote_by": "The Agency",
-      "scene_image": "/app/static/images/debrief_captured.webp",
+      "scene_image": "app/static/images/debrief_captured.webp",
       "scene_caption": "The interrogator sits across the table beneath a lamp"
     },
     {
@@ -652,7 +652,7 @@
       "narration_seed": "Instead of stealing the Gold Urn, your scholarly cover story convinces Chief Sterling to invite you onto the museum's honorary advisory board. You leave with an official catalog entry and a spotless record.",
       "quote": "An unorthodox outcome, Rob. Sometimes the cover story is worth more than the prize.",
       "quote_by": "The Agency",
-      "scene_image": "/app/static/images/main_exhibition_hall.webp",
+      "scene_image": "app/static/images/main_exhibition_hall.webp",
       "scene_caption": "Exhibition gallery under archive lighting"
     }
   ],

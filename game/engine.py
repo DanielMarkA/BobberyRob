@@ -25,7 +25,7 @@ from memory.models import SLOTS, Claim, Turn
 from memory.store import MemoryStore
 from scenario.loader import EndingDef, GuardDef, ScenarioConfig, load_scenario
 
-VAULT_EMPTY_SCENE_IMAGE = "/app/static/images/restricted_collection_empty.webp"
+VAULT_EMPTY_SCENE_IMAGE = "app/static/images/restricted_collection_empty.webp"
 
 # Basic sign-in slots logged to museum checkpoint reports so deeper guards can cross-check.
 _RECEPTION_SIGNIN_SLOTS = frozenset({"name", "occupation", "employer", "reason_for_visit"})
