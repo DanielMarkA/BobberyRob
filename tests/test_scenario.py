@@ -98,6 +98,41 @@ class TestScenarioLoader(unittest.TestCase):
         self.assertIn("items", exported)
         self.assertIn("suspicion_settings", exported)
 
+    def test_static_asset_paths_are_url_safe_and_exist(self) -> None:
+        repo_root = Path(__file__).resolve().parent.parent
+        asset_urls = [
+            self.raw_data["location_image"],
+            self.raw_data["mission_briefing"]["location_image"],
+            *(item["image"] for item in self.raw_data["starting_inventory"]),
+            *(loc["image"] for loc in self.raw_data["locations"]),
+            *(loc["thumbnail"] for loc in self.raw_data["locations"]),
+            *(guard["portrait"] for guard in self.raw_data["guards"]),
+            *(item["image"] for item in self.raw_data["items"]),
+            *(ending["scene_image"] for ending in self.raw_data["endings"]),
+        ]
+
+        for url in asset_urls:
+            self.assertTrue(
+                url.startswith("app/static/"),
+                f"Expected relative app/static/ URL, got {url!r}",
+            )
+            path_part = url.split("?", 1)[0]
+            self.assertEqual(path_part, path_part.lower(), f"Uppercase in asset URL {url!r}")
+            self.assertNotIn(" ", path_part, f"Space in asset URL {url!r}")
+            self.assertNotIn("%", path_part, f"Percent-encoding in asset URL {url!r}")
+
+            rel_path = Path(path_part.removeprefix("app/"))
+            cur = repo_root
+            for part in rel_path.parts:
+                entries = {p.name for p in cur.iterdir()}
+                self.assertIn(
+                    part,
+                    entries,
+                    f"Exact-case segment {part!r} missing in {cur} for {url!r}",
+                )
+                cur = cur / part
+            self.assertTrue(cur.is_file(), f"Asset path is not a file: {cur}")
+
 
 if __name__ == "__main__":
     unittest.main()
